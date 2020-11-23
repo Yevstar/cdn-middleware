@@ -1,8 +1,9 @@
-var express = require('express');
+const express = require('express');
+const azureCtrl = require('../controllers/azure.controller');
+
 var router = express.Router();
 
-// router.get('/', function(req, res, next) {
-//   res.render('index', { title: 'Express' });
-// });
+router.route('/')
+  .post(azureCtrl.sendMessage)
 
 module.exports = router;

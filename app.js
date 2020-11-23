@@ -1,28 +1,35 @@
-var express = require('express');
-var cookieParser = require('cookie-parser');
-var bodyParser = require('body-parser');
+const express = require('express');
+const cookieParser = require('cookie-parser');
+const bodyParser = require('body-parser');
+const cors = require('cors');
 
-var routes = require('./routes/index');
+const { port } = require('./config');
 
-var acs_middleware = require('./acs-middleware');
+const routes = require('./routes/index');
 
-var app = express();
-var server = require('http').Server(app);
+const acs_middleware = require('./acs-middleware');
 
-// acs_middleware.init();
+const app = express();
+
 acs_middleware.start();
 
+// acs_middleware.start();
+
+app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
+
 
 app.use('/', routes);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
-  var err = new Error('Not Found');
+  const err = new Error('Not Found');
   err.status = 404;
   next(err);
 });
 
-module.exports = {app: app, server: server};
+app.listen(port, function(){
+  console.log('Server is running on Port:', port);
+});
