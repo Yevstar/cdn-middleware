@@ -12,43 +12,43 @@ var printError = function (err) {
 };
 
 var printMessage = async function (message) {
-  console.log('Telemetry received: ');
-  // const deviceId = message.annotations["iothub-connection-device-id"];
+  // console.log('Telemetry received: ');
+  const deviceId = message.annotations["iothub-connection-device-id"];
   
-  // let customerId = 0;
-  // const res = await dbClient.query(text2, [deviceId]);
+  let customerId = 0;
+  const res = await dbClient.query(text2, [deviceId]);
 
-  // console.log(res.rows[0]);
+  console.log(res.rows[0]);
   
-  // if(res.rows.length > 0) {
-  //   customerId = res.rows[0].company_id
-  // }
+  if(res.rows.length > 0) {
+    customerId = res.rows[0].company_id
+  }
   
-  // let groupNum = converter(message.body, 1, 4);
-  // let obj = {};
-  // obj.groups = [];
-  // offset = 5;
-  // for (var N = 0; N < groupNum; N++) {
-  //   let group = {};
-  //   group.timestamp = converter(message.body, offset, 4); //5
-  //   group.values = [];
-  //   let valCount = converter(message.body, offset, 4);  //9
-  //   for (var M = 0; M < valCount; M++) {
-  //     let val = {};
-  //     val.id = converter(message.body, offset, 1);  //13
-  //     val.status = converter(message.body, offset, 1);  //14
-  //     val.values = [];
-  //     let numOfElements = converter(message.body, offset, 1); //15
-  //     let byteOfElement = converter(message.body, offset, 1); //16
-  //     for(let i = 0; i < numOfElements; i++) {
-  //       val.values.push(converter(message.body, offset, byteOfElement, true));
-  //     }
-  //     let queryValues = [deviceId, customerId, val.id, group.timestamp, JSON.stringify(val.values)];
-  //     await dbClient.query(text, queryValues);
-  //     group.values.push(val);
-  //   }
-  //   obj.groups.push(group);
-  // }
+  let groupNum = converter(message.body, 1, 4);
+  let obj = {};
+  obj.groups = [];
+  offset = 5;
+  for (var N = 0; N < groupNum; N++) {
+    let group = {};
+    group.timestamp = converter(message.body, offset, 4); //5
+    group.values = [];
+    let valCount = converter(message.body, offset, 4);  //9
+    for (var M = 0; M < valCount; M++) {
+      let val = {};
+      val.id = converter(message.body, offset, 1);  //13
+      val.status = converter(message.body, offset, 1);  //14
+      val.values = [];
+      let numOfElements = converter(message.body, offset, 1); //15
+      let byteOfElement = converter(message.body, offset, 1); //16
+      for(let i = 0; i < numOfElements; i++) {
+        val.values.push(converter(message.body, offset, byteOfElement, true));
+      }
+      let queryValues = [deviceId, customerId, val.id, group.timestamp, JSON.stringify(val.values)];
+      await dbClient.query(text, queryValues);
+      group.values.push(val);
+    }
+    obj.groups.push(group);
+  }
   // console.log(JSON.stringify(obj, null, 2));
 };
 
