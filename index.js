@@ -11,7 +11,8 @@ const { Client } = require('pg');
 
 let dbClient;
 let offset;
-const text = 'INSERT INTO blenders(blender_id, timestamp, values) VALUES($1, $2, $3) RETURNING *';
+const text = 'INSERT INTO device_data(device_id, customer_id, tag_id, timestamp, values) VALUES($1, $2, $3, $4, $5) RETURNING *';
+const text2 = 'SELECT * FROM devices WHERE serial_number = $1';
 
 var printError = function (err) {
   console.log(err.message);
@@ -29,8 +30,19 @@ function converter(buff, start, len, isValue = false) {
   return ret;
 }
 
-var printMessage = function (message) {
-  console.log('Telemetry received: ');
+var printMessage = async function (message) {
+  // console.log('Telemetry received: ');
+  const deviceId = message.annotations["iothub-connection-device-id"];
+  
+  let customerId = 0;
+  const res = await dbClient.query(text2, [deviceId]);
+
+  console.log(res.rows[0]);
+  
+  if(res.rows.length > 0) {
+    customerId = res.rows[0].company_id
+  }
+  
   let groupNum = converter(message.body, 1, 4);
   let obj = {};
   obj.groups = [];
@@ -50,14 +62,8 @@ var printMessage = function (message) {
       for(let i = 0; i < numOfElements; i++) {
         val.values.push(converter(message.body, offset, byteOfElement, true));
       }
-      let queryValues = [val.id, group.timestamp, JSON.stringify(val.values)];
-      dbClient.query(text, queryValues, (err, res) => {
-        if (err) {
-          console.log(err.stack)
-        } else {
-          console.log(res.rows[0])
-        }
-      })
+      let queryValues = [deviceId, customerId, val.id, group.timestamp, JSON.stringify(val.values)];
+      await dbClient.query(text, queryValues);
       group.values.push(val);
     }
     obj.groups.push(group);
@@ -67,16 +73,13 @@ var printMessage = function (message) {
 
 async function main(){
   dbClient = new Client({
-    user: 'deploy@acstestdbserver',
-    host: 'acstestdbserver.postgres.database.azure.com',
+    user: 'postgres',
+    host: '157.230.210.3',
     database: 'acs',
-    password: 'gJwsEqpdYjbDFapAH4nVTstW',
+    password: 'L0nd0n',
     port: 5432,
       ssl: {
-        rejectUnauthorized: false,
-        // ca: fs.readFileSync('/path/to/server-certificates/root.crt').toString(),
-        // key: fs.readFileSync('/path/to/client-key/postgresql.key').toString(),
-        // cert: fs.readFileSync('/path/to/client-certificates/postgresql.crt').toString(),
+        rejectUnauthorized: false
       },
   })
   await dbClient.connect();
