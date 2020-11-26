@@ -1,10 +1,11 @@
 const { Client } = require('pg');
 const { EventHubClient, EventPosition } = require('@azure/event-hubs');
 const { connectionString } = require('./config');
+const { db_host, db_user, db_database, db_password, db_port } = require('./config');
 
 let dbClient;
 let offset;
-const text = 'INSERT INTO device_data(device_id, customer_id, tag_id, timestamp, values) VALUES($1, $2, $3, $4, $5) RETURNING *';
+const text = 'INSERT INTO device_data(device_id, customer_id, machine_id, tag_id, timestamp, values) VALUES($1, $2, $3, $4, $5, $6) RETURNING *';
 const text2 = 'SELECT * FROM devices WHERE serial_number = $1';
 
 var printError = function (err) {
@@ -18,10 +19,9 @@ var printMessage = async function (message) {
   let customerId = 0;
   const res = await dbClient.query(text2, [deviceId]);
 
-  console.log(res.rows[0]);
-  
   if(res.rows.length > 0) {
     customerId = res.rows[0].company_id
+    machineId = res.rows[0].machine_id
   }
   
   let groupNum = converter(message.body, 1, 4);
@@ -43,8 +43,9 @@ var printMessage = async function (message) {
       for(let i = 0; i < numOfElements; i++) {
         val.values.push(converter(message.body, offset, byteOfElement, true));
       }
-      let queryValues = [deviceId, customerId, val.id, group.timestamp, JSON.stringify(val.values)];
+      let queryValues = [deviceId, customerId, machineId, val.id, group.timestamp, JSON.stringify(val.values)];
       await dbClient.query(text, queryValues);
+      console.log(queryValues);
       group.values.push(val);
     }
     obj.groups.push(group);
