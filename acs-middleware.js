@@ -3,6 +3,15 @@ const { EventHubClient, EventPosition } = require('@azure/event-hubs');
 const { connectionString } = require('./config');
 const { db_host, db_user, db_database, db_password, db_port } = require('./config');
 
+let json_db_batch_blender = require('./plc_configs/BD_Bach_Blender.json');
+let json_accumeter_ovation_continuous_blender = require('./plc_configs/Accumeter_Ovation_Continuous_Blender.json');
+let json_gh_f_gravimetric_additive_feeder = require('./plc_configs/GH-F_Gravimetric_Additive_Feeder.json');
+let json_gh_gravimetric_extrusion_control_hopper = require('./plc_configs/GH_Gravimetric_extrusion_Control_Hopper.json');
+let json_ngx_dryer = require('./plc_configs/NGX_Dryer.json');
+let json_ngx_nomad_dryer = require('./plc_configs/NGX_Nomad_Dryer.json');
+let json_t50_central_granulator = require('./plc_configs/T50_Central_Granulator.json');
+let json_vtc_plus_conveying_system = require('./plc_configs/VTC_Plus_Conveying_System.json');
+
 let dbClient;
 let offset;
 const text = 'INSERT INTO device_data(device_id, customer_id, machine_id, tag_id, timestamp, values) VALUES($1, $2, $3, $4, $5, $6) RETURNING *';
@@ -68,11 +77,11 @@ function converter(buff, start, len, isValue = false) {
 module.exports = {
   start: async function() {
     dbClient = new Client({
-      user: 'postgres',
-      host: '157.230.210.3',
-      database: 'acs',
-      password: 'L0nd0n',
-      port: 5432,
+      user: db_user,
+      host: db_host,
+      database: db_database,
+      password: db_password,
+      port: db_port,
         ssl: {
           rejectUnauthorized: false
         },
