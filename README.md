@@ -13,7 +13,12 @@ Install libraries
     $ cd acs-middleware
     $ npm install
 ```
+Config envirenment variables
+``` sh
+    copy .env.example file and update variables
+    rename it .env
+```
 Run script
 ``` sh
-    $ node index
+    $ npm start
 ```
