@@ -76,19 +76,24 @@ function converter(buff, start, len, isValue = false) {
 
 module.exports = {
   start: async function() {
-    dbClient = new Client({
-      user: db_user,
-      host: db_host,
-      database: db_database,
-      password: db_password,
-      port: db_port,
-        ssl: {
-          rejectUnauthorized: false
-        },
-    })
-    await dbClient.connect();
+    try {
+      dbClient = new Client({
+        user: db_user,
+        host: db_host,
+        database: db_database,
+        password: db_password,
+        port: db_port,
+          ssl: {
+            rejectUnauthorized: false
+          },
+      })
+      await dbClient.connect();
 
-    console.log("DB connected !");
+      console.log("DB connected !");
+    } catch (error) {
+      console.log("DB connection failed !");
+      console.log(error)
+    }
 
     var ehClient;
     EventHubClient.createFromIotHubConnectionString(connectionString).then(function (client) {
