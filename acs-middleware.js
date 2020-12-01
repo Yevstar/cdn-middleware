@@ -61,7 +61,7 @@ var printMessage = async function (message) {
       let numOfElements = converter(message.body, offset, 1); //15
       let byteOfElement = converter(message.body, offset, 1); //16
       for(let i = 0; i < numOfElements; i++) {
-        let type = json_machines[machineId - 1].plctags[val.id].type;
+        let type = json_machines[machineId - 1].plctags[val.id - 1].type;
 
         val.values.push(getTagValue(message.body, offset, byteOfElement, type));
       }
