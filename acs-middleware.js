@@ -12,6 +12,17 @@ let json_ngx_nomad_dryer = require('./plc_configs/NGX_Nomad_Dryer.json');
 let json_t50_central_granulator = require('./plc_configs/T50_Central_Granulator.json');
 let json_vtc_plus_conveying_system = require('./plc_configs/VTC_Plus_Conveying_System.json');
 
+let json_machines = [
+  json_db_batch_blender,
+  json_accumeter_ovation_continuous_blender,
+  json_gh_f_gravimetric_additive_feeder,
+  json_gh_gravimetric_extrusion_control_hopper,
+  json_ngx_dryer,
+  json_ngx_nomad_dryer,
+  json_t50_central_granulator,
+  json_vtc_plus_conveying_system,
+];
+
 let dbClient;
 let offset;
 const text = 'INSERT INTO device_data(device_id, customer_id, machine_id, tag_id, timestamp, values) VALUES($1, $2, $3, $4, $5, $6) RETURNING *';
@@ -50,7 +61,9 @@ var printMessage = async function (message) {
       let numOfElements = converter(message.body, offset, 1); //15
       let byteOfElement = converter(message.body, offset, 1); //16
       for(let i = 0; i < numOfElements; i++) {
-        val.values.push(converter(message.body, offset, byteOfElement, true));
+        let type = json_machines[machineId - 1].plctags[val.id].type;
+
+        val.values.push(getTagValue(message.body, offset, byteOfElement, type));
       }
       let queryValues = [deviceId, customerId, machineId, val.id, group.timestamp, JSON.stringify(val.values)];
       await dbClient.query(text, queryValues);
@@ -69,6 +82,27 @@ function converter(buff, start, len, isValue = false) {
     ret = isValue ? slicedBuff.readInt8() : slicedBuff.readUInt8();
   } else if(len === 4) {
     ret = isValue ? slicedBuff.readInt32BE() : slicedBuff.readUInt32BE()
+  }
+  offset += len;
+  return ret;
+}
+
+function getTagValue(buff, start, len, type = 'int32') {
+  let slicedBuff = buff.slice(start, start + len);
+  let ret = 0;
+  if(type === 'int8') {
+    return slicedBuff.readInt8();
+  } else if (type === 'int32') {
+    return slicedBuff.readInt32BE();
+  } else if(type === 'uint32') {
+    return slicedBuff.readUInt32BE();
+  } else if(type === 'bool') {
+    var t = slicedBuff.readUInt8();
+
+    // Mark just the final bits and convert to a boolean.
+    return !!(val & 0x80);
+  } else if(type === 'float') {
+    return slicedBuff.readFloatBE();
   }
   offset += len;
   return ret;
