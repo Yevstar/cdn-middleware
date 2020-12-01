@@ -3,7 +3,7 @@ const { EventHubClient, EventPosition } = require('@azure/event-hubs');
 const { connectionString } = require('./config');
 const { db_host, db_user, db_database, db_password, db_port } = require('./config');
 
-let json_db_batch_blender = require('./plc_configs/BD_Bach_Blender.json');
+let json_db_batch_blender = require('./plc_configs/BD_Batch_Blender.json');
 let json_accumeter_ovation_continuous_blender = require('./plc_configs/Accumeter_Ovation_Continuous_Blender.json');
 let json_gh_f_gravimetric_additive_feeder = require('./plc_configs/GH-F_Gravimetric_Additive_Feeder.json');
 let json_gh_gravimetric_extrusion_control_hopper = require('./plc_configs/GH_Gravimetric_extrusion_Control_Hopper.json');
