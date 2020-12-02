@@ -13,14 +13,14 @@ let json_t50_central_granulator = require('./plc_configs/T50_Central_Granulator.
 let json_vtc_plus_conveying_system = require('./plc_configs/VTC_Plus_Conveying_System.json');
 
 let json_machines = [
-  json_db_batch_blender,
-  json_accumeter_ovation_continuous_blender,
-  json_gh_f_gravimetric_additive_feeder,
-  json_gh_gravimetric_extrusion_control_hopper,
-  json_ngx_dryer,
-  json_ngx_nomad_dryer,
-  json_t50_central_granulator,
-  json_vtc_plus_conveying_system,
+  json_db_batch_blender,                        // 1
+  json_accumeter_ovation_continuous_blender,    // 2
+  json_gh_gravimetric_extrusion_control_hopper, // 3
+  json_gh_f_gravimetric_additive_feeder,        // 4
+  json_vtc_plus_conveying_system,               // 5
+  json_ngx_dryer,                               // 6
+  json_ngx_nomad_dryer,                         // 7
+  json_t50_central_granulator,                  // 8
 ];
 
 let dbClient;
@@ -90,6 +90,7 @@ function converter(buff, start, len, isValue = false) {
 function getTagValue(buff, start, len, type = 'int32') {
   let slicedBuff = buff.slice(start, start + len);
   let ret = 0;
+  offset += len;
   if(type === 'int8') {
     return slicedBuff.readInt8();
   } else if (type === 'int32') {
@@ -98,13 +99,10 @@ function getTagValue(buff, start, len, type = 'int32') {
     return slicedBuff.readUInt32BE();
   } else if(type === 'bool') {
     var t = slicedBuff.readUInt8();
-
-    // Mark just the final bits and convert to a boolean.
-    return !!(val & 0x80);
+    return !!(t & 0x80);
   } else if(type === 'float') {
     return slicedBuff.readFloatBE();
   }
-  offset += len;
   return ret;
 }
 
