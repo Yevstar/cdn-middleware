@@ -43,7 +43,7 @@ var printMessage = async function (message) {
     customerId = res.rows[0].company_id
     machineId = res.rows[0].machine_id
   }
-  if(deviceId === 1) {
+  if(machineId == 1) {
     let groupNum = converter(message.body, 1, 4);
     let obj = {};
     obj.groups = [];
