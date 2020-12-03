@@ -43,33 +43,34 @@ var printMessage = async function (message) {
     customerId = res.rows[0].company_id
     machineId = res.rows[0].machine_id
   }
-  
-  let groupNum = converter(message.body, 1, 4);
-  let obj = {};
-  obj.groups = [];
-  offset = 5;
-  for (var N = 0; N < groupNum; N++) {
-    let group = {};
-    group.timestamp = converter(message.body, offset, 4); //5
-    group.values = [];
-    let valCount = converter(message.body, offset, 4);  //9
-    for (var M = 0; M < valCount; M++) {
-      let val = {};
-      val.id = converter(message.body, offset, 1);  //13
-      val.status = converter(message.body, offset, 1);  //14
-      val.values = [];
-      let numOfElements = converter(message.body, offset, 1); //15
-      let byteOfElement = converter(message.body, offset, 1); //16
-      for(let i = 0; i < numOfElements; i++) {
-        let type = json_machines[machineId - 1].plctags[val.id - 1].type;
-        val.values.push(getTagValue(message.body, offset, byteOfElement, type));
+  if(deviceId === 1) {
+    let groupNum = converter(message.body, 1, 4);
+    let obj = {};
+    obj.groups = [];
+    offset = 5;
+    for (var N = 0; N < groupNum; N++) {
+      let group = {};
+      group.timestamp = converter(message.body, offset, 4); //5
+      group.values = [];
+      let valCount = converter(message.body, offset, 4);  //9
+      for (var M = 0; M < valCount; M++) {
+        let val = {};
+        val.id = converter(message.body, offset, 1);  //13
+        val.status = converter(message.body, offset, 1);  //14
+        val.values = [];
+        let numOfElements = converter(message.body, offset, 1); //15
+        let byteOfElement = converter(message.body, offset, 1); //16
+        for(let i = 0; i < numOfElements; i++) {
+          let type = json_machines[machineId - 1].plctags[val.id - 1].type;
+          val.values.push(getTagValue(message.body, offset, byteOfElement, type));
+        }
+        let queryValues = [deviceId, customerId, machineId, val.id, group.timestamp, JSON.stringify(val.values)];
+        await dbClient.query(text, queryValues);
+        console.log(queryValues);
+        group.values.push(val);
       }
-      let queryValues = [deviceId, customerId, machineId, val.id, group.timestamp, JSON.stringify(val.values)];
-      await dbClient.query(text, queryValues);
-      console.log(queryValues);
-      group.values.push(val);
+      obj.groups.push(group);
     }
-    obj.groups.push(group);
   }
   // console.log(JSON.stringify(obj, null, 2));
 };
@@ -90,15 +91,13 @@ function getTagValue(buff, start, len, type = 'int32') {
   let slicedBuff = buff.slice(start, start + len);
   let ret = 0;
   offset += len;
-  if(type === 'int8') {
-    return slicedBuff.readInt8();
-  } else if (type === 'int32') {
-    return slicedBuff.readInt32BE();
-  } else if(type === 'uint32') {
+  if(type === 'uint32') {
     return slicedBuff.readUInt32BE();
+  } else if(type === 'int16') {
+    return slicedBuff.readInt16BE();
   } else if(type === 'bool') {
-    var t = slicedBuff.readUInt8();
-    return !!(t & 0x80);
+    var t = slicedBuff.readUInt16BE();
+    return !!(t & 0xFFFF);
   } else if(type === 'float') {
     return slicedBuff.readFloatBE();
   }
