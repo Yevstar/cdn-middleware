@@ -62,7 +62,6 @@ var printMessage = async function (message) {
       let byteOfElement = converter(message.body, offset, 1); //16
       for(let i = 0; i < numOfElements; i++) {
         let type = json_machines[machineId - 1].plctags[val.id - 1].type;
-
         val.values.push(getTagValue(message.body, offset, byteOfElement, type));
       }
       let queryValues = [deviceId, customerId, machineId, val.id, group.timestamp, JSON.stringify(val.values)];
