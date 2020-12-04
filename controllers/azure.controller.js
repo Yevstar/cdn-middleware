@@ -32,7 +32,7 @@ module.exports = {
         } else {
           console.log('Client connected');
 
-          var message = new Message(JSON.stringify({ key : 'value' }));
+          var message = new Message(JSON.stringify(req.body.requestJson));
           client.send(req.body.targetDevice, message, function (err) {
             if (err) {
               console.error(err.toString());
