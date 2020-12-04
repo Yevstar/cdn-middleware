@@ -6,6 +6,7 @@ const { connectionString } = require('../config');
 module.exports = {
   sendMessage: function(req, res) {
     try {
+      console.log(req.body);
       if (!connectionString) {
         console.log('Please set the connectionString environment variable.');
         return res.status(400).json({

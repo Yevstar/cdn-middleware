@@ -77,7 +77,7 @@
             "ecount"  : 1,
             "interval"   : 3600,
             "compare" : true
-        },
+        },        
         {
             "name"      : "N11_5_0_PV1_Screen",
             "id"      : 9,
