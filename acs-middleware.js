@@ -66,7 +66,7 @@ var printMessage = async function (message) {
         }
         let queryValues = [deviceId, customerId, machineId, val.id, group.timestamp, JSON.stringify(val.values)];
         await dbClient.query(text, queryValues);
-        console.log(queryValues);
+        // console.log(queryValues);
         group.values.push(val);
       }
       obj.groups.push(group);
