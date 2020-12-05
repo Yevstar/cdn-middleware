@@ -7,8 +7,8 @@ const { connectionString } = require('../config');
 
 function receiveFeedback(err, receiver){
   receiver.on('message', function (msg) {
-    console.log('Feedback message:')
-    console.log(msg.getData().toString('utf-8'));
+    // console.log('Feedback message:')
+    // console.log(msg.getData().toString('utf-8'));
   });
 }
 
@@ -39,14 +39,14 @@ module.exports = {
             message: "Could not connect"
           })
         } else {
-          console.log('Client connected');
+          // console.log('Client connected');
 
           serviceClient.getFeedbackReceiver(receiveFeedback);
           var message = new Message(JSON.stringify(req.body.requestJson));
           message.ack = 'full';
           message.messageId = "My Message ID";
 
-          console.log('Sending message: ' + message.getData());
+          // console.log('Sending message: ' + message.getData());
           serviceClient.send(req.body.targetDevice, message, function (err) {
             if (err) {
               console.error(err.toString());
@@ -54,7 +54,7 @@ module.exports = {
                 message: err.toString()
               })
             } else {
-              console.log('sent c2d message');
+              // console.log('sent c2d message');
               return res.status(200).json({
                 message: "sent c2d message"
               })
