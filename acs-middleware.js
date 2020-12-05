@@ -33,46 +33,67 @@ var printError = function (err) {
 };
 
 var printMessage = async function (message) {
-  // console.log('Telemetry received: ');
   const deviceId = message.annotations["iothub-connection-device-id"];
   
   let customerId = 0;
-  const res = await dbClient.query(text2, [deviceId]);
 
-  if(res.rows.length > 0) {
+  var res = null;
+
+  try {
+    res = await dbClient.query(text2, [deviceId]);
+  } catch (error) {
+    console.log("Device not found");
+    console.log(error)
+    return;
+  }
+
+  if(res && res.rows.length > 0) {
     customerId = res.rows[0].company_id
     machineId = res.rows[0].machine_id
-  }
-  if(machineId == 1 || machineId == 2 || machineId == 3 || machineId == 4) {
-    let groupNum = converter(message.body, 1, 4);
-    let obj = {};
-    obj.groups = [];
-    offset = 5;
-    for (var N = 0; N < groupNum; N++) {
-      let group = {};
-      group.timestamp = converter(message.body, offset, 4); //5
-      group.values = [];
-      let valCount = converter(message.body, offset, 4);  //9
-      for (var M = 0; M < valCount; M++) {
-        let val = {};
-        val.id = converter(message.body, offset, 1);  //13
-        val.status = converter(message.body, offset, 1);  //14
-        val.values = [];
-        let numOfElements = converter(message.body, offset, 1); //15
-        let byteOfElement = converter(message.body, offset, 1); //16
-        for(let i = 0; i < numOfElements; i++) {
-          let type = json_machines[machineId - 1].plctags[val.id - 1].type;
-          val.values.push(getTagValue(message.body, offset, byteOfElement, type));
-        }
-        let queryValues = [deviceId, customerId, machineId, val.id, group.timestamp, JSON.stringify(val.values)];
-        await dbClient.query(text, queryValues);
-        // console.log(queryValues);
-        group.values.push(val);
-      }
-      obj.groups.push(group);
+
+    if(!machineId) {
+      console.log(`Machine is not assigned to device ${deviceId}`);
+      return;
     }
   }
-  // console.log(JSON.stringify(obj, null, 2));
+
+  let groupNum = converter(message.body, 1, 4);
+  let obj = {};
+  obj.groups = [];
+  offset = 5;
+  for (var N = 0; N < groupNum; N++) {
+    let group = {};
+    group.timestamp = converter(message.body, offset, 4); //5
+    group.values = [];
+    let valCount = converter(message.body, offset, 4);  //9
+    for (var M = 0; M < valCount; M++) {
+      let val = {};
+      val.id = converter(message.body, offset, 1);  //13
+      val.status = converter(message.body, offset, 1);  //14
+      val.values = [];
+      let numOfElements = converter(message.body, offset, 1); //15
+      let byteOfElement = converter(message.body, offset, 1); //16
+      for(let i = 0; i < numOfElements; i++) {
+        let type = json_machines[machineId - 1].plctags[val.id - 1].type;
+        val.values.push(getTagValue(message.body, offset, byteOfElement, type));
+      }
+      let queryValues = [deviceId, customerId, machineId, val.id, group.timestamp, JSON.stringify(val.values)];
+      try {
+        await dbClient.query(text, queryValues);
+        console.log(JSON.stringify({
+          "deviceId:": deviceId,
+          "machineId:": machineId,
+          "tagId:": val.id,
+          "values:": val.values
+        }, null, 2));
+        group.values.push(val);
+      } catch (error) {
+        console.log("Inserting into database failed.")
+        console.log(error)
+      }
+    }
+    obj.groups.push(group);
+  }
 };
 
 function converter(buff, start, len, isValue = false) {
