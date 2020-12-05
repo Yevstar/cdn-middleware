@@ -1,7 +1,16 @@
-var iothub = require('azure-iothub');
+var Client = require('azure-iothub').Client;
+var Message = require('azure-iot-common').Message;
+
 const { PgClient } = require('pg');
 
 const { connectionString } = require('../config');
+
+function receiveFeedback(err, receiver){
+  receiver.on('message', function (msg) {
+    console.log('Feedback message:')
+    console.log(msg.getData().toString('utf-8'));
+  });
+}
 
 module.exports = {
   sendMessage: function(req, res) {
@@ -21,9 +30,9 @@ module.exports = {
         })
       }
 
-      var client = iothub.Client.fromConnectionString(connectionString);
+      var serviceClient = Client.fromConnectionString(connectionString);
 
-      client.open(function (err) {
+      serviceClient.open(function (err) {
         if (err) {
           console.error('Could not connect: ' + err.message);
           return res.status(400).json({
@@ -32,8 +41,13 @@ module.exports = {
         } else {
           console.log('Client connected');
 
+          serviceClient.getFeedbackReceiver(receiveFeedback);
           var message = new Message(JSON.stringify(req.body.requestJson));
-          client.send(req.body.targetDevice, message, function (err) {
+          message.ack = 'full';
+          message.messageId = "My Message ID";
+
+          console.log('Sending message: ' + message.getData());
+          serviceClient.send(req.body.targetDevice, message, function (err) {
             if (err) {
               console.error(err.toString());
               return res.status(400).json({

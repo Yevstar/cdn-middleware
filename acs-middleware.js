@@ -80,12 +80,12 @@ var printMessage = async function (message) {
       let queryValues = [deviceId, customerId, machineId, val.id, group.timestamp, JSON.stringify(val.values)];
       try {
         await dbClient.query(text, queryValues);
-        console.log(JSON.stringify({
-          "deviceId:": deviceId,
-          "machineId:": machineId,
-          "tagId:": val.id,
-          "values:": val.values
-        }, null, 2));
+        console.log({
+          "deviceId": deviceId,
+          "machineId": machineId,
+          "tagId": val.id,
+          "values": val.values
+        });
         group.values.push(val);
       } catch (error) {
         console.log("Inserting into database failed.")
