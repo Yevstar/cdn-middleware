@@ -143,21 +143,18 @@ function getTagValue(buff, start, len, type = 'int32') {
   let slicedBuff = buff.slice(start, start + len);
   let ret = 0;
   offset += len;
-  if(len === 1) {
-    return slicedBuff.readUInt8();
-  } else if(len === 2) {
-    if(type === 'int16') {
-      return slicedBuff.readInt16BE();
-    } else {
-      return slicedBuff.readUInt16BE();
-    }
-  } else if(len == 4) {
-    if(type === 'float') {
-      return slicedBuff.readFloatBE();
-    } else if(type == 'uint32') {
-      return slicedBuff.readUInt32BE();
-    }
+
+  if(type === 'bool') {
+    return !!(slicedBuff.readUInt8() && 0xFF);
   }
+  if(type === 'int16') {
+    return slicedBuff.readInt16BE();
+  } if(type === 'float') {
+    return slicedBuff.readFloatBE();
+  } else if(type == 'uint32') {
+    return slicedBuff.readUInt32BE();
+  }
+  
   return ret;
 }
 
