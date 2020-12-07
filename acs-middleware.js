@@ -11,6 +11,10 @@ let json_ngx_dryer = require('./plc_configs/NGX_Dryer.json');
 let json_ngx_nomad_dryer = require('./plc_configs/NGX_Nomad_Dryer.json');
 let json_t50_central_granulator = require('./plc_configs/T50_Central_Granulator.json');
 let json_vtc_plus_conveying_system = require('./plc_configs/VTC_Plus_Conveying_System.json');
+let json_gp_portable_chiller = require('./plc_configs/GP_Portable_Chiller.json');
+let json_he_central_chiller = require('./plc_configs/HE_Central_Chiller.json');
+let json_truetemp_tcu = require('./plc_configs/TrueTemp_TCU.json');
+
 
 let json_db_batch_blender = {};
 json_db_batch_blender.plctags = [];
@@ -36,6 +40,9 @@ let json_machines = [
   json_ngx_dryer,                               // 6
   json_ngx_nomad_dryer,                         // 7
   json_t50_central_granulator,                  // 8
+  json_gp_portable_chiller,
+  json_he_central_chiller,
+  json_truetemp_tcu,
 ];
 
 let dbClient;
