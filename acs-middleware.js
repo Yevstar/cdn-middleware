@@ -29,8 +29,6 @@ for (var i = 12; i < json_db_batch_blender_.plctags.length; i++) {
   json_db_batch_blender.plctags.push(json_db_batch_blender_.plctags[i])
 }
 
-console.log(json_db_batch_blender);
-
 let json_machines = [
   json_db_batch_blender,                        // 1
   json_accumeter_ovation_continuous_blender,    // 2
@@ -55,8 +53,9 @@ var printError = function (err) {
 };
 
 var printMessage = async function (message) {
-  const deviceId = message.annotations["iothub-connection-device-id"];
+  var deviceId = message.annotations["iothub-connection-device-id"];
   
+  if (deviceId == 'TESTACS157') deviceId = 1234567157;
   let customerId = 0;
 
   var res = null;
@@ -83,6 +82,7 @@ var printMessage = async function (message) {
     console.log(message.body);
     return
   }
+
   var commandNumber = converter(message.body, 0, 1);
   if(commandNumber == 245) {
     let groupNum = converter(message.body, 1, 4);
@@ -98,6 +98,10 @@ var printMessage = async function (message) {
       for (var M = 0; M < valCount; M++) {
         let val = {};
         val.id = converter(message.body, offset, 1);  //13
+
+        if(val.id == 250) {
+          return;
+        }
 
         val.status = converter(message.body, offset, 1);  //14
         val.values = [];
@@ -154,6 +158,11 @@ function getTagValue(buff, start, len, type = 'int32') {
   if(type === 'bool') {
     return !!(slicedBuff.readUInt8() && 0xFF);
   }
+
+  if(len === 1) {
+    return slicedBuff.readUInt8();
+  }
+
   if(type === 'int16') {
     return slicedBuff.readInt16BE();
   } if(type === 'float') {

@@ -20,5 +20,5 @@ Config envirenment variables
 ```
 Run script
 ``` sh
-    $ npm start
+    $ pm2 start app.js
 ```
