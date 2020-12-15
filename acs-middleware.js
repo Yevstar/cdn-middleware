@@ -55,7 +55,8 @@ var printError = function (err) {
 var printMessage = async function (message) {
   var deviceId = message.annotations["iothub-connection-device-id"];
   
-  if (deviceId == 'TESTACS157') deviceId = 1234567157;
+  // if (deviceId == 'TESTACS157') deviceId = 1234567157;
+  if (deviceId == 'TESTACS157') deviceId = 1234568157;
   let customerId = 0;
 
   var res = null;
