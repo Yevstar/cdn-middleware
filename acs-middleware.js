@@ -77,6 +77,10 @@ var printMessage = async function (message) {
       return;
     }
   }
+  else {
+    console.log(`Device ${deviceId} not found`);
+    return;
+  }
 
   if(!Buffer.isBuffer(message.body)) {
     console.log(message.body);
