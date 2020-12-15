@@ -13,8 +13,8 @@ services:
     volumes:
       - .:/var/www/html/acs-middleware
     networks:
-      - acsapi_app-network
+      - acs-api_app-network
 
 networks:
-  acsapi_app-network:
+  acs-api_app-network:
     external: true
