@@ -3,6 +3,8 @@ const { EventHubClient, EventPosition } = require('@azure/event-hubs');
 const { connectionString } = require('./config');
 const { db_host, db_user, db_database, db_password, db_port } = require('./config');
 
+const util = require('util');
+
 let json_db_batch_blender_ = require('./plc_configs/BD_Batch_Blender.json');
 let json_accumeter_ovation_continuous_blender = require('./plc_configs/Accumeter_Ovation_Continuous_Blender.json');
 let json_gh_f_gravimetric_additive_feeder = require('./plc_configs/GH-F_Gravimetric_Additive_Feeder.json');
@@ -14,7 +16,6 @@ let json_vtc_plus_conveying_system = require('./plc_configs/VTC_Plus_Conveying_S
 let json_gp_portable_chiller = require('./plc_configs/GP_Portable_Chiller.json');
 let json_he_central_chiller = require('./plc_configs/HE_Central_Chiller.json');
 let json_truetemp_tcu = require('./plc_configs/TrueTemp_TCU.json');
-
 
 let json_db_batch_blender = {};
 json_db_batch_blender.plctags = [];
@@ -55,8 +56,18 @@ var printError = function (err) {
 var printMessage = async function (message) {
   var deviceId = message.annotations["iothub-connection-device-id"];
   
-  // if (deviceId == 'TESTACS157') deviceId = 1234567157;
-  if (deviceId == 'TESTACS157') deviceId = 1234568157;
+  // if (deviceId == 'TESTACS157') deviceId = 1234567157;   // BD Batch Blender
+  // if (deviceId == 'TESTACS157') deviceId = 1234568157;  // GH Gravimetric Extrusion Control Hopper
+  // if (deviceId == 'TESTACS157') deviceId = 2234567157;  // Accumeter Ovation Continuous Blender
+  // if (deviceId == 'TESTACS157') deviceId = 4234567157;  // GH-F Gravimetric Additive Feeder
+  // if (deviceId == 'TESTACS157') deviceId = 5234567157;  // VTC Plus Conveying System
+  // if (deviceId == 'TESTACS157') deviceId = 6234567157;  // NGX Dryer
+  // if (deviceId == 'TESTACS157') deviceId = 7234567157;  // NGX Nomad Dryer
+  // if (deviceId == 'TESTACS157') deviceId = 8234567157;  // T50 Central Granulator
+  // if (deviceId == 'TESTACS157') deviceId = 9234567157;  // GP Portable Chiller
+  // if (deviceId == 'TESTACS157') deviceId = 10234567157;  // HE Central Chiller
+  // if (deviceId == 'TESTACS157') deviceId = 11234567157;  // TrueTemp TCU
+  
   let customerId = 0;
 
   var res = null;
@@ -126,6 +137,7 @@ var printMessage = async function (message) {
         let queryValues = [deviceId, customerId, machineId, val.id, group.timestamp, JSON.stringify(val.values)];
         try {
           await dbClient.query(text, queryValues);
+
           console.log({
             "deviceId": deviceId,
             "machineId": machineId,
@@ -187,10 +199,7 @@ module.exports = {
         host: db_host,
         database: db_database,
         password: db_password,
-        port: db_port,
-          ssl: {
-            rejectUnauthorized: false
-          },
+        port: db_port
       })
       await dbClient.connect();
 
