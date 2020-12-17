@@ -199,20 +199,23 @@ module.exports = {
     if(!json_machines) {
       console.log("Plc configs are not available.");
     } else {
+
       let db_batch_blender_plctags = [];
 
-      for (var i = 0; i < 12; i++) {
-        db_batch_blender_plctags.push(json_machines[0].full_json.plctags[i])
-      }
-      for (var i = 0; i < json_machines[0].full_json.plctags[11].dependents.length; i++) {
-        db_batch_blender_plctags.push(json_machines[0].full_json.plctags[11].dependents[i])
-      }
-      for (var i = 12; i < json_machines[0].full_json.plctags.length; i++) {
-        db_batch_blender_plctags.push(json_machines[0].full_json.plctags[i])
-      }
+      json_machines[0].full_json.plctags.forEach(function(plctag) {
+        if(plctag.id == 12) {
+          plctag.dependents.forEach((dependent) => {
+            db_batch_blender_plctags.push(dependent)
+          })
+        } else {
+          db_batch_blender_plctags.push(plctag)
+        }
+      })
 
       json_machines[0].full_json.plctags = db_batch_blender_plctags;
     }
+    
+    console.log(json_machines[0].full_json);
     
     var ehClient;
     EventHubClient.createFromIotHubConnectionString(connectionString).then(function (client) {
