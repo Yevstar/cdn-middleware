@@ -21,8 +21,6 @@ let json_machines;
 
 let dbClient;
 let offset;
-const text = 'INSERT INTO device_data(device_id, customer_id, machine_id, tag_id, timestamp, values) VALUES($1, $2, $3, $4, $5, $6) RETURNING *';
-const text2 = 'SELECT * FROM devices WHERE serial_number = $1';
 
 var printError = function (err) {
   console.log(err.message);
@@ -48,7 +46,7 @@ var printMessage = async function (message) {
   var res = null;
 
   try {
-    res = await dbClient.query(text2, [deviceId]);
+    res = await dbClient.query('SELECT * FROM devices WHERE serial_number = $1', [deviceId]);
   } catch (error) {
     console.log("Device not found");
     console.log(error)
@@ -111,6 +109,7 @@ var printMessage = async function (message) {
         }
         let queryValues = [deviceId, customerId, machineId, val.id, group.timestamp, JSON.stringify(val.values)];
         try {
+          const text = 'INSERT INTO device_data(device_id, customer_id, machine_id, tag_id, timestamp, values) VALUES($1, $2, $3, $4, $5, $6) RETURNING *';
           await dbClient.query(text, queryValues);
 
           console.log({
@@ -148,7 +147,7 @@ function getTagValue(buff, start, len, type = 'int32') {
   offset += len;
 
   if(type === 'bool') {
-    return !!(slicedBuff.readUInt8() && 0xFF);
+    return !!(slicedBuff.readUInt8());
   }
 
   if(len === 1) {
@@ -214,8 +213,6 @@ module.exports = {
 
       json_machines[0].full_json.plctags = db_batch_blender_plctags;
     }
-    
-    console.log(json_machines[0].full_json);
     
     var ehClient;
     EventHubClient.createFromIotHubConnectionString(connectionString).then(function (client) {
