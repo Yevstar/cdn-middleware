@@ -3,46 +3,21 @@ const { EventHubClient, EventPosition } = require('@azure/event-hubs');
 const { connectionString } = require('./config');
 const { db_host, db_user, db_database, db_password, db_port } = require('./config');
 
-const util = require('util');
+let json_machines;
 
-let json_db_batch_blender_ = require('./plc_configs/BD_Batch_Blender.json');
-let json_accumeter_ovation_continuous_blender = require('./plc_configs/Accumeter_Ovation_Continuous_Blender.json');
-let json_gh_f_gravimetric_additive_feeder = require('./plc_configs/GH-F_Gravimetric_Additive_Feeder.json');
-let json_gh_gravimetric_extrusion_control_hopper = require('./plc_configs/GH_Gravimetric_Extrusion_Control_Hopper.json');
-let json_ngx_dryer = require('./plc_configs/NGX_Dryer.json');
-let json_ngx_nomad_dryer = require('./plc_configs/NGX_Nomad_Dryer.json');
-let json_t50_central_granulator = require('./plc_configs/T50_Central_Granulator.json');
-let json_vtc_plus_conveying_system = require('./plc_configs/VTC_Plus_Conveying_System.json');
-let json_gp_portable_chiller = require('./plc_configs/GP_Portable_Chiller.json');
-let json_he_central_chiller = require('./plc_configs/HE_Central_Chiller.json');
-let json_truetemp_tcu = require('./plc_configs/TrueTemp_TCU.json');
-
-let json_db_batch_blender = {};
-json_db_batch_blender.plctags = [];
-
-for (var i = 0; i < 13; i++) {
-  json_db_batch_blender.plctags.push(json_db_batch_blender_.plctags[i])
-}
-for (var i = 0; i < json_db_batch_blender_.plctags[11].dependents.length; i++) {
-  json_db_batch_blender.plctags.push(json_db_batch_blender_.plctags[11].dependents[i])
-}
-for (var i = 12; i < json_db_batch_blender_.plctags.length; i++) {
-  json_db_batch_blender.plctags.push(json_db_batch_blender_.plctags[i])
-}
-
-let json_machines = [
-  json_db_batch_blender,                        // 1
-  json_accumeter_ovation_continuous_blender,    // 2
-  json_gh_gravimetric_extrusion_control_hopper, // 3
-  json_gh_f_gravimetric_additive_feeder,        // 4
-  json_vtc_plus_conveying_system,               // 5
-  json_ngx_dryer,                               // 6
-  json_ngx_nomad_dryer,                         // 7
-  json_t50_central_granulator,                  // 8
-  json_gp_portable_chiller,
-  json_he_central_chiller,
-  json_truetemp_tcu,
-];
+// let json_machines = [
+//   json_db_batch_blender,                        // 1
+//   json_accumeter_ovation_continuous_blender,    // 2
+//   json_gh_gravimetric_extrusion_control_hopper, // 3
+//   json_gh_f_gravimetric_additive_feeder,        // 4
+//   json_vtc_plus_conveying_system,               // 5
+//   json_ngx_dryer,                               // 6
+//   json_ngx_nomad_dryer,                         // 7
+//   json_t50_central_granulator,                  // 8
+//   json_gp_portable_chiller,                     // 9
+//   json_he_central_chiller,                      // 10
+//   json_truetemp_tcu,                            // 11
+// ];
 
 let dbClient;
 let offset;
@@ -124,7 +99,7 @@ var printMessage = async function (message) {
         let numOfElements = converter(message.body, offset, 1); //15
         let byteOfElement = converter(message.body, offset, 1); //16
         for(let i = 0; i < numOfElements; i++) {
-          let plctag = json_machines[machineId - 1].plctags.find((tag) => {
+          let plctag = json_machines[machineId - 1].full_json.plctags.find((tag) => {
             return tag.id == val.id
           })
           if(plctag) {
@@ -191,6 +166,16 @@ function getTagValue(buff, start, len, type = 'int32') {
   return ret;
 }
 
+async function getPlcConfigs() {
+  try {
+    const res = await dbClient.query('SELECT * FROM machines');
+
+    return res.rows;
+  } catch (error) {
+    return false;
+  }
+}
+
 module.exports = {
   start: async function() {
     try {
@@ -209,6 +194,26 @@ module.exports = {
       console.log(error)
     }
 
+    json_machines = await getPlcConfigs();
+
+    if(!json_machines) {
+      console.log("Plc configs are not available.");
+    } else {
+      let db_batch_blender_plctags = [];
+
+      for (var i = 0; i < 12; i++) {
+        db_batch_blender_plctags.push(json_machines[0].full_json.plctags[i])
+      }
+      for (var i = 0; i < json_machines[0].full_json.plctags[11].dependents.length; i++) {
+        db_batch_blender_plctags.push(json_machines[0].full_json.plctags[11].dependents[i])
+      }
+      for (var i = 12; i < json_machines[0].full_json.plctags.length; i++) {
+        db_batch_blender_plctags.push(json_machines[0].full_json.plctags[i])
+      }
+
+      json_machines[0].full_json.plctags = db_batch_blender_plctags;
+    }
+    
     var ehClient;
     EventHubClient.createFromIotHubConnectionString(connectionString).then(function (client) {
       console.log("Successully created the EventHub Client from iothub connection string.");
