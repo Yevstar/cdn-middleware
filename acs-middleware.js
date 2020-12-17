@@ -106,7 +106,7 @@ var printMessage = async function (message) {
         let queryValues = [deviceId, customerId, machineId, val.id, group.timestamp, JSON.stringify(val.values)];
         try {
           const text = 'INSERT INTO device_data(device_id, customer_id, machine_id, tag_id, timestamp, values) VALUES($1, $2, $3, $4, $5, $6) RETURNING *';
-          await dbClient.query(text, queryValues);
+          // await dbClient.query(text, queryValues);
 
           res = await dbClient.query('SELECT * FROM alarm_types WHERE tag_id = $1 AND machine_id = $2', [val.id, machineId]);
           if(res && res.rows.length > 0) {
