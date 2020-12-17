@@ -193,7 +193,7 @@ module.exports = {
       })
       await dbClient.connect();
 
-      console.log("DB connected !");
+      console.log("DB connected !!!");
     } catch (error) {
       console.log("DB connection failed !");
       console.log(error)
