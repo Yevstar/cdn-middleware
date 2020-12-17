@@ -3,22 +3,18 @@ const { EventHubClient, EventPosition } = require('@azure/event-hubs');
 const { connectionString } = require('./config');
 const { db_host, db_user, db_database, db_password, db_port } = require('./config');
 
+const Pusher = require("pusher");
+const { pusherAppId, pusherKey, pusherSecret, pusherCluster, pusherUseTLS } = require('./config');
+
+const pusher = new Pusher({
+  appId: pusherAppId,
+  key: pusherKey,
+  secret: pusherSecret,
+  cluster: pusherCluster,
+  useTLS: pusherUseTLS
+});
+
 let json_machines;
-
-// let json_machines = [
-//   json_db_batch_blender,                        // 1
-//   json_accumeter_ovation_continuous_blender,    // 2
-//   json_gh_gravimetric_extrusion_control_hopper, // 3
-//   json_gh_f_gravimetric_additive_feeder,        // 4
-//   json_vtc_plus_conveying_system,               // 5
-//   json_ngx_dryer,                               // 6
-//   json_ngx_nomad_dryer,                         // 7
-//   json_t50_central_granulator,                  // 8
-//   json_gp_portable_chiller,                     // 9
-//   json_he_central_chiller,                      // 10
-//   json_truetemp_tcu,                            // 11
-// ];
-
 let dbClient;
 let offset;
 
@@ -111,6 +107,16 @@ var printMessage = async function (message) {
         try {
           const text = 'INSERT INTO device_data(device_id, customer_id, machine_id, tag_id, timestamp, values) VALUES($1, $2, $3, $4, $5, $6) RETURNING *';
           await dbClient.query(text, queryValues);
+
+          res = await dbClient.query('SELECT * FROM alarm_types WHERE tag_id = $1 AND machine_id = $2', [val.id, machineId]);
+          if(res && res.rows.length > 0) {
+            pusher.trigger('product.alarm.channel', 'alarm.created', {
+              deviceId: deviceId,
+              machineId: machineId,
+              tagId: val.id,
+              values: val.values
+            });
+          }
 
           console.log({
             "deviceId": deviceId,
