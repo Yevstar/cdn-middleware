@@ -122,7 +122,7 @@ var printMessage = async function (message) {
             "deviceId": deviceId,
             "machineId": machineId,
             "tagId": val.id,
-            "values": val.values
+            "value": val.values
           });
           group.values.push(val);
         } catch (error) {
