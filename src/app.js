@@ -14,7 +14,6 @@ app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: false }))
 
 db.connect().then((response) => {
-  console.log(db)
   // Start capturing events
   acsMiddleware.start()
 
