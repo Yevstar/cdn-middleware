@@ -1,5 +1,6 @@
-const dotenv = require('dotenv');
-dotenv.config();
+const dotenv = require('dotenv')
+
+dotenv.config()
 module.exports = {
   endpoint: process.env.API_URL,
   port: process.env.PORT,
@@ -14,5 +15,5 @@ module.exports = {
   pusherKey: process.env.PUSHER_KEY,
   pusherSecret: process.env.PUSHER_SECRET,
   pusherCluster: process.env.PUSHER_CLUSTER,
-  pusherUseTLS: process.env.PUSHER_TLS,
-};
+  pusherUseTLS: process.env.PUSHER_TLS
+}
