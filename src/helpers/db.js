@@ -20,5 +20,5 @@ async function connect() {
 
 module.exports = {
   connect,
-  client
+  query: (text, params) => client.query(text, params)
 }

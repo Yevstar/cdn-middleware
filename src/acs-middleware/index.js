@@ -1,5 +1,6 @@
 const { EventHubClient, EventPosition } = require('@azure/event-hubs')
 const { connectionString } = require('../config')
+const pgFormat = require('pg-format')
 const Pusher = require('pusher')
 const { pusherAppId, pusherKey, pusherSecret, pusherCluster, pusherUseTLS } = require('../config')
 const db = require('../helpers/db')
@@ -13,7 +14,6 @@ const pusher = new Pusher({
 })
 
 let json_machines
-let dbClient
 let offset
 
 const printError = function (err) {
@@ -40,7 +40,7 @@ const printMessage = async function (message) {
   let res = null
 
   try {
-    res = await db.client.query('SELECT * FROM devices WHERE serial_number = $1', [deviceId])
+    res = await db.query('SELECT * FROM devices WHERE serial_number = $1', [deviceId])
   } catch (error) {
     console.log('Device not found')
     console.log(error)
@@ -115,9 +115,6 @@ const printMessage = async function (message) {
         
         rowsToInsert.push(queryValues)
         // try {
-        //   const text = 'INSERT INTO device_data(device_id, customer_id, machine_id, tag_id, timestamp, values) VALUES($1, $2, $3, $4, $5, $6) RETURNING *'
-        //   await dbClient.query(text, queryValues)
-
         //   res = await dbClient.query('SELECT * FROM alarm_types WHERE tag_id = $1 AND machine_id = $2', [val.id, machineId])
         //   if (res && res.rows.length > 0) {
         //     pusher.trigger('product.alarm.channel', 'alarm.created', {
@@ -143,12 +140,8 @@ const printMessage = async function (message) {
     }
 
     try {
-      cnosole.log(rowsToInsert)
-      // db.client.query(`
-      //   INSERT INTO device_data(device_id, customer_id, machine_id, tag_id, timestamp, values) VALUES
-      //     ('device1', 'customerid1', ...),
-      //     ('device2', 'customerid2', ...)
-      // `)
+      console.log(rowsToInsert)
+      await db.query(pgFormat('INSERT INTO device_data(device_id, customer_id, machine_id, tag_id, timestamp, values) VALUES %L', rowsToInsert))
     } catch (error) {
       console.log('Inserting into database failed.')
       console.log(error)
@@ -197,10 +190,12 @@ function getTagValue(buff, start, len, type = 'int32') {
 
 async function getPlcConfigs() {
   try {
-    const res = await dbClient.query('SELECT * FROM machines')
+    const res = await db.query('SELECT * FROM machines')
 
     return res.rows
   } catch (error) {
+    console.log(error)
+
     return false
   }
 }
