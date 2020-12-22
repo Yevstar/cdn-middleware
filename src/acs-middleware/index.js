@@ -140,9 +140,9 @@ const printMessage = async function (message) {
     }
 
     try {
-      console.log("New array: ")
+      console.log("New array of inserted rows: ")
       console.log(rowsToInsert)
-      
+
       await db.query(pgFormat('INSERT INTO device_data(device_id, customer_id, machine_id, tag_id, timestamp, values) VALUES %L', rowsToInsert))
     } catch (error) {
       console.log('Inserting into database failed.')
