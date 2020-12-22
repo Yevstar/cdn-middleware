@@ -1,5 +1,5 @@
 trigger:
-- master
+- feature/docker
 pool:
   vmImage: 'ubuntu-latest'
 steps:
