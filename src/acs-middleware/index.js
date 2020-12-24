@@ -126,7 +126,7 @@ const printMessage = async function (message) {
             values: val.values
           })
         } catch (error) {
-          console.log('Sending failed.')
+          console.log('Sending failed')
           console.log(error)
         }
 
