@@ -1,4 +1,4 @@
-const { EventHubClient, EventPosition } = require('@azure/event-hubs')
+const { EventHubClient, EventPosition, delay } = require('@azure/event-hubs')
 const { connectionString, senderConnectionString } = require('../config')
 const pgFormat = require('pg-format')
 const Pusher = require('pusher')
@@ -20,6 +20,10 @@ let offset
 
 const printError = function (err) {
   console.log(err.message)
+}
+
+const printReceivedMessage = async function (message) {
+  console.log(message.body)
 }
 
 const printMessage = async function (message) {
@@ -176,16 +180,16 @@ const printMessage = async function (message) {
 
     try {
 
-      console.log(rowsToInsert)
+      // console.log(rowsToInsert)
       await db.query(pgFormat('INSERT INTO device_data(device_id, customer_id, machine_id, tag_id, timestamp, values) VALUES %L', rowsToInsert))
 
       if (utilizationRowsToInsert.length) {
-        console.log(utilizationRowsToInsert)
+        // console.log(utilizationRowsToInsert)
         await db.query(pgFormat('INSERT INTO utilizations(device_id, customer_id, machine_id, tag_id, timestamp, values) VALUES %L', utilizationRowsToInsert))
       }
 
       if (energyConsumptionRowsToInsert.length) {
-        console.log(energyConsumptionRowsToInsert)
+        // console.log(energyConsumptionRowsToInsert)
         await db.query(pgFormat('INSERT INTO energy_consumptions(device_id, customer_id, machine_id, tag_id, timestamp, values) VALUES %L', energyConsumptionRowsToInsert))
       }
     } catch (error) {
@@ -285,5 +289,26 @@ module.exports = {
         return ehClient.receive(id, printMessage, printError, { eventPosition: EventPosition.fromEnqueuedTime(Date.now()) })
       })
     }).catch(printError)
+
+
+    client = EventHubClient.createFromConnectionString(senderConnectionString, '');
+    const ids = await client.getPartitionIds();
+    for (let i = 0; i < 1; i++) {
+      const onMessage = (eventData) => {
+        console.log("### Actual message:", eventData.body);
+      };
+      const onError = (err) => {
+        console.log(">>>>> Error occurred: ", err);
+      };
+      const rcvrHandler = client.receive(ids[i], onMessage, onError, {
+        enableReceiverRuntimeMetric: true,
+        eventPosition: EventPosition.fromEnqueuedTime(Date.now())
+      });
+
+      // giving some time for receiver setup to complete. This will make sure that the
+      // receiver can receive the newly sent message from now onwards.
+      await delay(3000);
+      console.log("***********Created receiver %d", i);
+    }
   }
 }
