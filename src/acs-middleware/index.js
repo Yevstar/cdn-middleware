@@ -290,25 +290,19 @@ module.exports = {
       })
     }).catch(printError)
 
-
+    // log received data
     client = EventHubClient.createFromConnectionString(senderConnectionString, '');
     const ids = await client.getPartitionIds();
-    for (let i = 0; i < 1; i++) {
+
+    return ids.map((id) => {
       const onMessage = (eventData) => {
-        console.log("### Actual message:", eventData.body);
+        console.log("### Actual message:", eventData);
       };
       const onError = (err) => {
         console.log(">>>>> Error occurred: ", err);
       };
-      const rcvrHandler = client.receive(ids[i], onMessage, onError, {
-        enableReceiverRuntimeMetric: true,
-        eventPosition: EventPosition.fromEnqueuedTime(Date.now())
-      });
 
-      // giving some time for receiver setup to complete. This will make sure that the
-      // receiver can receive the newly sent message from now onwards.
-      await delay(3000);
-      console.log("***********Created receiver %d", i);
-    }
+      client.receive(id, onMessage, onError, { eventPosition: EventPosition.fromEnqueuedTime(Date.now()) })
+    })
   }
 }
