@@ -292,10 +292,8 @@ module.exports = {
     }).catch(printError)
 
     // log received data
-    client = EventHubClient.createFromConnectionString(senderConnectionString, '');
-    const ids = await client.getPartitionIds();
 
-    return ids.map((id) => {
+    return partitionIds.map((id) => {
       const onMessage = (eventData) => {
         console.log("### Actual message:", eventData);
       };
@@ -303,7 +301,7 @@ module.exports = {
         console.log(">>>>> Error occurred: ", err);
       };
 
-      client.receive(id, onMessage, onError, { eventPosition: EventPosition.fromEnqueuedTime(Date.now()) })
+      senderClient.receive(id, onMessage, onError, { eventPosition: EventPosition.fromEnqueuedTime(Date.now()) })
     })
   }
 }
