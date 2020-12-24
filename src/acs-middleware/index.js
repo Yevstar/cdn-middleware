@@ -1,6 +1,5 @@
 const { EventHubClient, EventPosition } = require('@azure/event-hubs')
-const { connectionString } = require('../config')
-const senderConnectionString = 'Endpoint=sb://acsiotdeveventhub.servicebus.windows.net/;SharedAccessKeyName=acsioteventhub1SendListen;SharedAccessKey=w3GRz0UhxAJ90ZOQb3ERSfIfLX+xe3mAnrxHyOlYlas=;EntityPath=acsioteventhub1'
+const { connectionString, senderConnectionString } = require('../config')
 const pgFormat = require('pg-format')
 const Pusher = require('pusher')
 const { pusherAppId, pusherKey, pusherSecret, pusherCluster, pusherUseTLS } = require('../config')
@@ -128,6 +127,7 @@ const printMessage = async function (message) {
           })
         } catch (error) {
           console.log('Sending failed')
+          console.log(error)
         }
 
         // check if the tag is utilization
