@@ -130,9 +130,9 @@ const printMessage = async function (message) {
           } else if (res.rows[0].tag_name === 'energy_consumption') {
             energyConsumptionRowsToInsert.push(queryValues)
           }
-        } else {
-          rowsToInsert.push(queryValues)
         }
+        
+        rowsToInsert.push(queryValues)
 
         // try {
         //   res = await dbClient.query('SELECT * FROM alarm_types WHERE tag_id = $1 AND machine_id = $2', [val.id, machineId])
@@ -161,10 +161,8 @@ const printMessage = async function (message) {
 
     try {
 
-      if (rowsToInsert.length) {
-        console.log(rowsToInsert)
-        await db.query(pgFormat('INSERT INTO device_data(device_id, customer_id, machine_id, tag_id, timestamp, values) VALUES %L', rowsToInsert))
-      }
+      console.log(rowsToInsert)
+      await db.query(pgFormat('INSERT INTO device_data(device_id, customer_id, machine_id, tag_id, timestamp, values) VALUES %L', rowsToInsert))
 
       if (utilizationRowsToInsert.length) {
         console.log(utilizationRowsToInsert)
