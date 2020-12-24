@@ -273,8 +273,8 @@ module.exports = {
       json_machines[0].full_json.plctags = db_batch_blender_plctags
     }
 
-    partitionIds = await senderClient.getPartitionIds()
     senderClient = EventHubClient.createFromConnectionString(senderConnectionString, '');
+    partitionIds = await senderClient.getPartitionIds()
 
     let ehClient
     
