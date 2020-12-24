@@ -1,9 +1,11 @@
 const { EventHubClient, EventPosition } = require('@azure/event-hubs')
-const { connectionString } = require('../config')
+const { connectionString, senderConnectionString } = require('../config')
 const pgFormat = require('pg-format')
 const Pusher = require('pusher')
 const { pusherAppId, pusherKey, pusherSecret, pusherCluster, pusherUseTLS } = require('../config')
 const db = require('../helpers/db')
+
+let senderClient
 
 const pusher = new Pusher({
   appId: pusherAppId,
@@ -21,6 +23,7 @@ const printError = function (err) {
 }
 
 const printMessage = async function (message) {
+
   let deviceId = message.annotations['iothub-connection-device-id']
   
   // if (deviceId === 'TESTACS157') deviceId = 1234567157   // BD Batch Blender
@@ -115,6 +118,17 @@ const printMessage = async function (message) {
 
         const queryValues = [deviceId, customerId, machineId, val.id, group.timestamp, JSON.stringify(val.values)]
         
+        try {
+          await senderClient.send({
+            deviceId: deviceId,
+            machineId: machineId,
+            tagId: val.id,
+            values: val.values
+          })
+        } catch (error) {
+          console.log('Sending failed')
+        }
+
         // check if the tag is utilization
         try {
           res = await db.query('SELECT * FROM tags WHERE configuration_id = $1 AND tag_id = $2', [machineId, val.id])
@@ -253,7 +267,9 @@ module.exports = {
 
       json_machines[0].full_json.plctags = db_batch_blender_plctags
     }
-    
+
+    const senderClient = EventHubClient.createFromConnectionString(senderConnectionString, '');
+
     let ehClient
     
     EventHubClient.createFromIotHubConnectionString(connectionString).then((client) => {
