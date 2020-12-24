@@ -1,5 +1,6 @@
 const { EventHubClient, EventPosition } = require('@azure/event-hubs')
-const { connectionString, senderConnectionString } = require('../config')
+const { connectionString } = require('../config')
+const senderConnectionString = 'Endpoint=sb://acsiotdeveventhub.servicebus.windows.net/;SharedAccessKeyName=acsioteventhub1SendListen;SharedAccessKey=w3GRz0UhxAJ90ZOQb3ERSfIfLX+xe3mAnrxHyOlYlas=;EntityPath=acsioteventhub1'
 const pgFormat = require('pg-format')
 const Pusher = require('pusher')
 const { pusherAppId, pusherKey, pusherSecret, pusherCluster, pusherUseTLS } = require('../config')
