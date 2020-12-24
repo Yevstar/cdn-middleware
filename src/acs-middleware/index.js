@@ -119,7 +119,7 @@ const printMessage = async function (message) {
         const queryValues = [deviceId, customerId, machineId, val.id, group.timestamp, JSON.stringify(val.values)]
         
         try {
-          await senderClient.send({
+          senderClient.send({
             deviceId: deviceId,
             machineId: machineId,
             tagId: val.id,
@@ -269,7 +269,7 @@ module.exports = {
       json_machines[0].full_json.plctags = db_batch_blender_plctags
     }
 
-    const senderClient = EventHubClient.createFromConnectionString(senderConnectionString, '');
+    senderClient = EventHubClient.createFromConnectionString(senderConnectionString, '');
 
     let ehClient
     
