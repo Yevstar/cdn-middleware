@@ -6,6 +6,7 @@ const { pusherAppId, pusherKey, pusherSecret, pusherCluster, pusherUseTLS } = re
 const db = require('../helpers/db')
 
 let senderClient
+let partitionIds
 
 const pusher = new Pusher({
   appId: pusherAppId,
@@ -121,14 +122,13 @@ const printMessage = async function (message) {
         }
 
         const queryValues = [deviceId, customerId, machineId, val.id, group.timestamp, JSON.stringify(val.values)]
-        
         try {
           senderClient.send({
             deviceId: deviceId,
             machineId: machineId,
             tagId: val.id,
             values: val.values
-          })
+          }, partitionIds[0])
         } catch (error) {
           console.log('Sending failed.')
           console.log(error)
@@ -273,6 +273,7 @@ module.exports = {
       json_machines[0].full_json.plctags = db_batch_blender_plctags
     }
 
+    partitionIds = await senderClient.getPartitionIds()
     senderClient = EventHubClient.createFromConnectionString(senderConnectionString, '');
 
     let ehClient
