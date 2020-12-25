@@ -6,7 +6,6 @@ const { pusherAppId, pusherKey, pusherSecret, pusherCluster, pusherUseTLS } = re
 const db = require('../helpers/db')
 
 let senderClient
-let partitionIds
 
 const pusher = new Pusher({
   appId: pusherAppId,
@@ -125,12 +124,12 @@ const printMessage = async function (message) {
         const queryValues = [deviceId, customerId, machineId, val.id, group.timestamp, JSON.stringify(val.values)]
         try {
           senderClient.send({
-            body: JSON.stringify({
+            body: {
               'deviceId': deviceId,
               'machineId': machineId,
               'tagId': val.id,
               'values': val.values
-            }, null, 2)
+            }
           })
         } catch (error) {
           console.log('Sending failed.')
@@ -277,7 +276,6 @@ module.exports = {
     }
 
     senderClient = EventHubClient.createFromConnectionString(senderConnectionString, 'acsioteventhub1');
-    partitionIds = await senderClient.getPartitionIds()
 
     let ehClient
     
@@ -293,18 +291,5 @@ module.exports = {
         return ehClient.receive(id, printMessage, printError, { eventPosition: EventPosition.fromEnqueuedTime(Date.now()) })
       })
     }).catch(printError)
-
-    // log received data
-
-    // return partitionIds.map((id) => {
-    //   const onMessage = (eventData) => {
-    //     console.log("### Actual message:", eventData);
-    //   };
-    //   const onError = (err) => {
-    //     console.log(">>>>> Error occurred: ", err);
-    //   };
-
-    //   senderClient.receive(id, onMessage, onError, { eventPosition: EventPosition.fromEnqueuedTime(Date.now()) })
-    // })
   }
 }
