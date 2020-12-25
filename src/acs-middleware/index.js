@@ -125,11 +125,14 @@ const printMessage = async function (message) {
         const queryValues = [deviceId, customerId, machineId, val.id, group.timestamp, JSON.stringify(val.values)]
         try {
           senderClient.send({
-            'deviceId': deviceId,
-            'machineId': machineId,
-            'tagId': val.id,
-            'values': val.values
-          }, partitionIds[0])
+            body: 'ABC'
+          })
+          // senderClient.send({
+          //   deviceId: deviceId,
+          //   machineId: machineId,
+          //   tagId: val.id,
+          //   values: val.values
+          // }, partitionIds[0])
         } catch (error) {
           console.log('Sending failed.')
           console.log(error)
