@@ -99,9 +99,19 @@ const printMessage = async function (message) {
         val.id = converter(message.body, offset, 1)  //13
 
         if (val.id === 250) {
-          console.log(message.body)
-          // getTagValue(message.body, offset, byteOfElement, type)
-          // await db.query('UPDATE devices SET plc_link = $1 WHERE serial_number = $2', [, deviceId])
+          converter(message.body, offset, 1)  //14
+          converter(message.body, offset, 1) //15
+          converter(message.body, offset, 1) //16
+          const plcLinkValue = getTagValue(message.body, offset, 1, 'bool')
+
+          console.log(plcLinkValue, deviceId)
+
+          try {
+            await db.query('UPDATE devices SET plc_link = $1 WHERE serial_number = $2', [plcLinkValue, deviceId])
+          } catch (error) {
+            console.log('Updating device plc_link failed.')
+          }
+
           return
         }
 
