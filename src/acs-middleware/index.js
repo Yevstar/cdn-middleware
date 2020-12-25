@@ -104,7 +104,8 @@ const printMessage = async function (message) {
           converter(message.body, offset, 1) //16
           const plcLinkValue = getTagValue(message.body, offset, 1, 'bool')
 
-          console.log(plcLinkValue, deviceId)
+          console.log(deviceId)
+          console.log(plcLinkValue)
 
           try {
             await db.query('UPDATE devices SET plc_link = $1 WHERE serial_number = $2', [plcLinkValue, deviceId])
