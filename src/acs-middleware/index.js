@@ -1,4 +1,4 @@
-const { EventHubClient, EventPosition, delay } = require('@azure/event-hubs')
+const { EventHubClient, EventData, EventPosition, OnMessage, OnError, MessagingError } = require('@azure/event-hubs')
 const { connectionString, senderConnectionString } = require('../config')
 const pgFormat = require('pg-format')
 const Pusher = require('pusher')
@@ -83,6 +83,7 @@ const printMessage = async function (message) {
 
     obj.groups = []
     offset = 5
+    const sendingData = []
 
     for (let N = 0; N < groupNum; N++) {
       const group = {}
@@ -122,19 +123,6 @@ const printMessage = async function (message) {
         }
 
         const queryValues = [deviceId, customerId, machineId, val.id, group.timestamp, JSON.stringify(val.values)]
-        try {
-          senderClient.send({
-            body: {
-              'deviceId': deviceId,
-              'machineId': machineId,
-              'tagId': val.id,
-              'values': val.values
-            }
-          })
-        } catch (error) {
-          console.log('Sending failed.')
-          console.log(error)
-        }
 
         // check if the tag is utilization
         try {
@@ -153,6 +141,15 @@ const printMessage = async function (message) {
           }
         }
         
+        sendingData.push({
+          body: {
+            'deviceId': deviceId,
+            'machineId': machineId,
+            'tagId': val.id,
+            'values': val.values
+          }
+        })
+
         rowsToInsert.push(queryValues)
 
         // try {
@@ -178,6 +175,13 @@ const printMessage = async function (message) {
         //   console.log(error)
         // }
       }
+    }
+
+    try {
+      await senderClient.sendBatch(sendingData);
+    } catch (error) {
+      console.log('Sending failed.')
+      console.log(error)
     }
 
     try {
