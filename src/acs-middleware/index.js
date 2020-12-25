@@ -99,6 +99,7 @@ const printMessage = async function (message) {
         val.id = converter(message.body, offset, 1)  //13
 
         if (val.id === 250) {
+          await db.query('UPDATE devices SET plc_link = $1 WHERE serial_number = $2', [, deviceId])
           return
         }
 
@@ -180,7 +181,7 @@ const printMessage = async function (message) {
 
     try {
 
-      // console.log(rowsToInsert)
+      console.log(rowsToInsert)
       await db.query(pgFormat('INSERT INTO device_data(device_id, customer_id, machine_id, tag_id, timestamp, values) VALUES %L', rowsToInsert))
 
       if (utilizationRowsToInsert.length) {
@@ -273,7 +274,7 @@ module.exports = {
       json_machines[0].full_json.plctags = db_batch_blender_plctags
     }
 
-    senderClient = EventHubClient.createFromConnectionString(senderConnectionString, '');
+    senderClient = EventHubClient.createFromConnectionString(senderConnectionString, 'acsioteventhub1');
     partitionIds = await senderClient.getPartitionIds()
 
     let ehClient
@@ -293,15 +294,15 @@ module.exports = {
 
     // log received data
 
-    return partitionIds.map((id) => {
-      const onMessage = (eventData) => {
-        console.log("### Actual message:", eventData);
-      };
-      const onError = (err) => {
-        console.log(">>>>> Error occurred: ", err);
-      };
+    // return partitionIds.map((id) => {
+    //   const onMessage = (eventData) => {
+    //     console.log("### Actual message:", eventData);
+    //   };
+    //   const onError = (err) => {
+    //     console.log(">>>>> Error occurred: ", err);
+    //   };
 
-      senderClient.receive(id, onMessage, onError, { eventPosition: EventPosition.fromEnqueuedTime(Date.now()) })
-    })
+    //   senderClient.receive(id, onMessage, onError, { eventPosition: EventPosition.fromEnqueuedTime(Date.now()) })
+    // })
   }
 }
