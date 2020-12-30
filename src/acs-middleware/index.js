@@ -283,7 +283,7 @@ function getTagValue(buff, start, len, type = 'int32') {
   } else if (type === 'int16') {
     return slicedBuff.readInt16BE()
   } if (type === 'float') {
-    console.log(buff, start, len)
+    console.log(buff.slice(start, start + 10), start, len)
 
     return slicedBuff.readFloatBE()
   } else if (type === 'uint32') {
