@@ -123,9 +123,9 @@ const printMessage = async function (message) {
         
         // bytes for tag id is different depending on multi or single config
         if (commandNumber === 245) {
-          val.id = converter(message.body, offset, 1)  //13
+          val.id = converter(message.body, offset, 1)
         } else if (commandNumber === 246) {
-          val.id = converter(message.body, offset, 2)  //13
+          val.id = converter(message.body, offset, 2)
         } else {
           console.log('Invalid tag')
 
@@ -163,7 +163,7 @@ const printMessage = async function (message) {
 
             val.values.push(getTagValue(message.body, offset, byteOfElement, type))
           } else {
-            console.log('Can\'t find tag')
+            console.log('Can\'t find tag', val.id)
           }
         }
 
