@@ -32,8 +32,8 @@ const printMessage = async function (message) {
   
   // if (deviceId === 'TESTACS157') deviceId = 1234567157   // BD Batch Blender
   // if (deviceId === 'TESTACS157') deviceId = 1234568157  // GH Gravimetric Extrusion Control Hopper
-  // if (deviceId === 'TESTACS157') deviceId = 2234567157  // Accumeter Ovation Continuous Blender
-  if (deviceId === 'TESTACS157') deviceId = 4234567157  // GH-F Gravimetric Additive Feeder
+  if (deviceId === 'TESTACS157') deviceId = 9990000001  // Accumeter Ovation Continuous Blender
+  // if (deviceId === 'TESTACS157') deviceId = 4234567157  // GH-F Gravimetric Additive Feeder
   // if (deviceId === 'TESTACS157') deviceId = 5234567157  // VTC Plus Conveying System
   // if (deviceId === 'TESTACS157') deviceId = 6234567157  // NGX Dryer
   // if (deviceId === 'TESTACS157') deviceId = 7234567157  // NGX Nomad Dryer
@@ -83,6 +83,12 @@ const printMessage = async function (message) {
         console.log('checkin added')
       }
     }
+
+    return
+  }
+
+  if (deviceId === 9990000001) {
+    console.log(message.body)
 
     return
   }
