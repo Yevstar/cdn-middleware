@@ -16,7 +16,6 @@ const pusher = new Pusher({
 })
 
 let json_machines
-let offset
 
 const printError = function (err) {
   console.log(err.message)
@@ -33,6 +32,44 @@ function logFullBuffer(buff) {
 }
 
 const printMessage = async function (message) {
+  let offset = 0;
+
+  function converter(buff, start, len) {
+    const slicedBuff = buff.slice(start, start + len)
+    let ret
+
+    if (len === 1) {
+      ret = slicedBuff.readUInt8()
+    } else if (len === 2) {
+      ret = slicedBuff.readUInt16BE()
+    } else if (len === 4) {
+      ret = slicedBuff.readUInt32BE()
+    }
+    offset += len
+
+    return ret
+  }
+
+  function getTagValue(buff, start, len, type = 'int32') {
+    const slicedBuff = buff.slice(start, start + len)
+    const ret = 0
+
+    offset += len
+
+    if (type === 'bool') {
+      return !!(slicedBuff.readUInt8())
+    } else if (type === 'int16') {
+      return slicedBuff.readInt16BE()
+    } if (type === 'float') {
+      console.log(logFullBuffer(buff), start, len)
+
+      return slicedBuff.readFloatBE()
+    } else if (type === 'uint32') {
+      return slicedBuff.readUInt32BE()
+    }
+    
+    return ret
+  }
 
   let deviceId = message.annotations['iothub-connection-device-id']
   
@@ -264,43 +301,6 @@ const printMessage = async function (message) {
       console.log(error)
     }
   }
-}
-
-function converter(buff, start, len) {
-  const slicedBuff = buff.slice(start, start + len)
-  let ret
-
-  if (len === 1) {
-    ret = slicedBuff.readUInt8()
-  } else if (len === 2) {
-    ret = slicedBuff.readUInt16BE()
-  } else if (len === 4) {
-    ret = slicedBuff.readUInt32BE()
-  }
-  offset += len
-
-  return ret
-}
-
-function getTagValue(buff, start, len, type = 'int32') {
-  const slicedBuff = buff.slice(start, start + len)
-  const ret = 0
-
-  offset += len
-
-  if (type === 'bool') {
-    return !!(slicedBuff.readUInt8())
-  } else if (type === 'int16') {
-    return slicedBuff.readInt16BE()
-  } if (type === 'float') {
-    console.log(logFullBuffer(buff), start, len)
-
-    return slicedBuff.readFloatBE()
-  } else if (type === 'uint32') {
-    return slicedBuff.readUInt32BE()
-  }
-  
-  return ret
 }
 
 async function getPlcConfigs() {
