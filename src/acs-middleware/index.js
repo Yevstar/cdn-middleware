@@ -22,6 +22,16 @@ const printError = function (err) {
   console.log(err.message)
 }
 
+function logFullBuffer(buff) {
+  if (buff.length < 30)
+    return
+  let start = 0
+  while(start < buff.length) {
+    console.log(buff.slice(start, 20))
+    start += 20
+  }
+}
+
 const printMessage = async function (message) {
 
   let deviceId = message.annotations['iothub-connection-device-id']
@@ -283,7 +293,7 @@ function getTagValue(buff, start, len, type = 'int32') {
   } else if (type === 'int16') {
     return slicedBuff.readInt16BE()
   } if (type === 'float') {
-    console.log(buff.slice(start, start + 20), start, len)
+    console.log(logFullBuffer(buff), start, len)
 
     return slicedBuff.readFloatBE()
   } else if (type === 'uint32') {
