@@ -109,8 +109,9 @@ const printMessage = async function (message) {
       group.timestamp = converter(message.body, offset, 4) //5
 
       if (commandNumber === 246) {
-        isAddedDevice = converter(message.body, offset, 4) === 1
-        machineId = 11
+        if (converter(message.body, offset, 4) === 1) {
+          machineId = 11
+        }
       }
 
       group.values = []
