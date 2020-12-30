@@ -201,8 +201,8 @@ const printMessage = async function (message) {
           if (plctag) {
             const { type } = plctag
 
-            console.log('tagId: ', val.id)
-            
+            console.log('tagId: ', val.id, 'machineId: ', machineId)
+
             val.values.push(getTagValue(message.body, offset, byteOfElement, type))
           } else {
             console.log('Can\'t find tag', val.id, offset)
