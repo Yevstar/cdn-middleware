@@ -51,6 +51,8 @@ const printMessage = async function (message) {
     } else if (type === 'int16') {
       return slicedBuff.readInt16BE()
     } if (type === 'float') {
+      console.log(buff, start, len)
+      
       return slicedBuff.readFloatBE()
     } else if (type === 'uint32') {
       return slicedBuff.readUInt32BE()
