@@ -89,9 +89,9 @@ const printMessage = async function (message) {
 
   if (deviceId === 9990000001) {
     console.log(message.body)
-
-    return
   }
+  
+  return
 
   const commandNumber = converter(message.body, 0, 1)
 
