@@ -120,7 +120,16 @@ const printMessage = async function (message) {
       for (let M = 0; M < valCount; M++) {
         const val = {}
         
-        val.id = converter(message.body, offset, 1)  //13
+        // bytes for tag id is different depending on multi or single config
+        if (commandNumber === 245) {
+          val.id = converter(message.body, offset, 1)  //13
+        } else if (commandNumber === 246) {
+          val.id = converter(message.body, offset, 2)  //13
+        } else {
+          console.log('Invalid tag')
+
+          return
+        }
 
         // plc link
         if (val.id === 250) {
@@ -246,6 +255,8 @@ function converter(buff, start, len) {
 
   if (len === 1) {
     ret = slicedBuff.readUInt8()
+  } else if (len === 2) {
+    ret = slicedBuff.readUInt16BE()
   } else if (len === 4) {
     ret = slicedBuff.readUInt32BE()
   }
