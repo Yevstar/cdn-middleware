@@ -74,7 +74,7 @@ const printMessage = async function (message) {
 
         console.log('checkin updated')
       } else {
-        await db.query('INSERT INTO device_checkins(device_id, cmd, ts, sdk, acs_sha1, config_hash, status) VALUES %L', [deviceId, message.body.cmd, message.body.ts, message.body.sdk, message.body.acs_sha1, message.body.config_hash, message.body.status])
+        await db.query('INSERT INTO device_checkins(device_id, ts, sdk, acs_sha1, config_hash, status) VALUES %L', [deviceId, message.body.ts, message.body.sdk, message.body.acs_sha1, message.body.config_hash, message.body.status])
 
         console.log('checkin added')
       }
