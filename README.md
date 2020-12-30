@@ -22,4 +22,3 @@ Run script
 ``` sh
     $ pm2 start app.js
 ```
-
