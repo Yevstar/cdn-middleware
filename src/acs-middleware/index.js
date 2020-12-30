@@ -67,7 +67,22 @@ const printMessage = async function (message) {
   }
 
   if (!Buffer.isBuffer(message.body)) {
-    console.log(message.body)
+    if (message.body.cmd === 'register') {
+      
+      console.log(message.body)
+
+      res = await db.query('SELECT * FROM device_checkins WHERE device_id = $1', [deviceId])
+
+      if (res && res.rows.length > 0) {
+        await db.query('UPDATE device_checkins SET ts = $1, sdk = $2, acs_sha1 = $3, config_hash = $4, status = $5 WHERE device_id = $6', [message.body.ts, message.body.sdk, message.body.acs_sha1, message.body.config_hash, message.body.status, deviceId])
+
+        console.log('checkin updated')
+      } else {
+        await db.query('INSERT INTO device_checkins(device_id, cmd, ts, sdk, acs_sha1, config_hash, status) VALUES %L', [deviceId, message.body.cmd, message.body.ts, message.body.sdk, message.body.acs_sha1, message.body.config_hash, message.body.status])
+
+        console.log('checkin added')
+      }
+    }
 
     return
   }
