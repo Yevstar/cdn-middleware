@@ -51,8 +51,6 @@ const printMessage = async function (message) {
     } else if (type === 'int16') {
       return slicedBuff.readInt16BE()
     } if (type === 'float') {
-      console.log(buff, start, len)
-
       return slicedBuff.readFloatBE()
     } else if (type === 'uint32') {
       return slicedBuff.readUInt32BE()
@@ -76,7 +74,8 @@ const printMessage = async function (message) {
   // if (deviceId === 'TESTACS157') deviceId = 11234567157  // TrueTemp TCU
   
   let customerId = 0
-
+  let machineId
+  let _machineId
   let res = null
 
   try {
@@ -91,7 +90,8 @@ const printMessage = async function (message) {
   if (res && res.rows.length > 0) {
     customerId = res.rows[0].company_id
     machineId = res.rows[0].machine_id
-
+    _machineId = machineId
+    
     if (!machineId) {
       console.log(`Machine is not assigned to device ${deviceId}`)
       
@@ -143,7 +143,9 @@ const printMessage = async function (message) {
       if (commandNumber === 246) {
         // check if device id is 1 or 0
         if (converter(message.body, offset, 4) === 1) {
-          machineId = 11
+          _machineId = 11
+        } else {
+          _machineId = machineId
         }
       }
 
@@ -194,14 +196,14 @@ const printMessage = async function (message) {
         for (let i = 0; i < numOfElements; i++) {
           // console.log(val.id, numOfElements, byteOfElement)
 
-          const plctag = json_machines[machineId - 1].full_json.plctags.find((tag) => {
+          const plctag = json_machines[_machineId - 1].full_json.plctags.find((tag) => {
             return tag.id === val.id
           })
 
           if (plctag) {
             const { type } = plctag
 
-            console.log('tagId: ', val.id, 'machineId: ', machineId, 'byteOfElement: ', byteOfElement)
+            // console.log('tagId: ', val.id, 'machineId: ', machineId, 'byteOfElement: ', byteOfElement)
 
             val.values.push(getTagValue(message.body, offset, byteOfElement, type))
           } else {
@@ -211,11 +213,11 @@ const printMessage = async function (message) {
           }
         }
 
-        const queryValues = [deviceId, customerId, machineId, val.id, group.timestamp, JSON.stringify(val.values)]
+        const queryValues = [deviceId, customerId, _machineId, val.id, group.timestamp, JSON.stringify(val.values)]
 
         // check if the tag is utilization
         try {
-          res = await db.query('SELECT * FROM tags WHERE configuration_id = $1 AND tag_id = $2', [machineId, val.id])
+          res = await db.query('SELECT * FROM tags WHERE configuration_id = $1 AND tag_id = $2', [_machineId, val.id])
         } catch (error) {
           console.log('Qeury from tags table failed.')
 
@@ -233,7 +235,7 @@ const printMessage = async function (message) {
         sendingData.push({
           body: {
             'deviceId': deviceId,
-            'machineId': machineId,
+            'machineId': _machineId,
             'tagId': val.id,
             'values': val.values
           }
