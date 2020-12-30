@@ -109,6 +109,7 @@ const printMessage = async function (message) {
       group.timestamp = converter(message.body, offset, 4) //5
 
       if (commandNumber === 246) {
+        // check if device id is 1 or 0
         if (converter(message.body, offset, 4) === 1) {
           machineId = 11
         }
@@ -166,6 +167,8 @@ const printMessage = async function (message) {
             val.values.push(getTagValue(message.body, offset, byteOfElement, type))
           } else {
             console.log('Can\'t find tag', val.id, offset)
+
+            return
           }
         }
 
