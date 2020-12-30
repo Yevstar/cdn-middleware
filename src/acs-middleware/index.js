@@ -154,6 +154,8 @@ const printMessage = async function (message) {
         const byteOfElement = converter(message.body, offset, 1) //16
 
         for (let i = 0; i < numOfElements; i++) {
+          console.log(val.id)
+          
           const plctag = json_machines[machineId - 1].full_json.plctags.find((tag) => {
             return tag.id === val.id
           })
@@ -274,13 +276,7 @@ function getTagValue(buff, start, len, type = 'int32') {
 
   if (type === 'bool') {
     return !!(slicedBuff.readUInt8())
-  }
-
-  if (len === 1) {
-    return slicedBuff.readUInt8()
-  }
-
-  if (type === 'int16') {
+  } else if (type === 'int16') {
     return slicedBuff.readInt16BE()
   } if (type === 'float') {
     return slicedBuff.readFloatBE()
