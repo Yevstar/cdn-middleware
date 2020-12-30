@@ -146,6 +146,11 @@ const printMessage = async function (message) {
         }
 
         val.status = converter(message.body, offset, 1)  //14
+
+        if (val.status !== 0) {
+          continue
+        }
+        
         val.values = []
         const numOfElements = converter(message.body, offset, 1) //15
         const byteOfElement = converter(message.body, offset, 1) //16
