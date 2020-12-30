@@ -91,25 +91,28 @@ const printMessage = async function (message) {
     console.log(message.body)
   }
   
-  return
-
   const commandNumber = converter(message.body, 0, 1)
 
-  if (commandNumber === 245) {
+  if (commandNumber === 245 || commandNumber === 246) {
     const rowsToInsert = []
     const utilizationRowsToInsert = []
     const energyConsumptionRowsToInsert = []
     const groupNum = converter(message.body, 1, 4)
-    const obj = {}
 
-    obj.groups = []
     offset = 5
     const sendingData = []
 
     for (let N = 0; N < groupNum; N++) {
       const group = {}
+      let isAddedDevice = false;
 
       group.timestamp = converter(message.body, offset, 4) //5
+
+      if (commandNumber === 246) {
+        isAddedDevice = converter(message.body, offset, 4) === 1
+        machineId = 11
+      }
+
       group.values = []
 
       const valCount = converter(message.body, offset, 4)  //9
@@ -119,14 +122,12 @@ const printMessage = async function (message) {
         
         val.id = converter(message.body, offset, 1)  //13
 
+        // plc link
         if (val.id === 250) {
           converter(message.body, offset, 1)  //14
           converter(message.body, offset, 1) //15
           converter(message.body, offset, 1) //16
           const plcLinkValue = getTagValue(message.body, offset, 1, 'bool')
-
-          console.log(deviceId)
-          console.log(plcLinkValue)
 
           try {
             await db.query('UPDATE devices SET plc_link = $1 WHERE serial_number = $2', [plcLinkValue, deviceId])
