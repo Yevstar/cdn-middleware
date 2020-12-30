@@ -27,7 +27,7 @@ function logFullBuffer(buff) {
     return
   let start = 0
   while(start < buff.length) {
-    console.log(buff.slice(start, 20))
+    console.log(buff.slice(start, start + 20))
     start += 20
   }
 }
