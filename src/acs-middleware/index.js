@@ -52,7 +52,7 @@ const printMessage = async function (message) {
       return slicedBuff.readInt16BE()
     } if (type === 'float') {
       console.log(buff, start, len)
-      
+
       return slicedBuff.readFloatBE()
     } else if (type === 'uint32') {
       return slicedBuff.readUInt32BE()
@@ -132,7 +132,6 @@ const printMessage = async function (message) {
     const energyConsumptionRowsToInsert = []
     const groupNum = converter(message.body, 1, 4)
 
-    offset = 5
     const sendingData = []
 
     for (let N = 0; N < groupNum; N++) {
@@ -202,6 +201,8 @@ const printMessage = async function (message) {
           if (plctag) {
             const { type } = plctag
 
+            console.log('tagId: ', val.id)
+            
             val.values.push(getTagValue(message.body, offset, byteOfElement, type))
           } else {
             console.log('Can\'t find tag', val.id, offset)
