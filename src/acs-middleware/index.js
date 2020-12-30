@@ -22,10 +22,6 @@ const printError = function (err) {
   console.log(err.message)
 }
 
-const printReceivedMessage = async function (message) {
-  console.log(message.body)
-}
-
 const printMessage = async function (message) {
 
   let deviceId = message.annotations['iothub-connection-device-id']
@@ -88,7 +84,7 @@ const printMessage = async function (message) {
   }
 
   if (deviceId === 9990000001) {
-    console.log(message.body)
+    // console.log(message.body)
   }
   
   const commandNumber = converter(message.body, 0, 1)
@@ -155,7 +151,7 @@ const printMessage = async function (message) {
         const byteOfElement = converter(message.body, offset, 1) //16
 
         for (let i = 0; i < numOfElements; i++) {
-          console.log(val.id, numOfElements, byteOfElement)
+          // console.log(val.id, numOfElements, byteOfElement)
 
           const plctag = json_machines[machineId - 1].full_json.plctags.find((tag) => {
             return tag.id === val.id
@@ -282,6 +278,8 @@ function getTagValue(buff, start, len, type = 'int32') {
   } else if (type === 'int16') {
     return slicedBuff.readInt16BE()
   } if (type === 'float') {
+    console.log(buffer, start, len)
+
     return slicedBuff.readFloatBE()
   } else if (type === 'uint32') {
     return slicedBuff.readUInt32BE()
