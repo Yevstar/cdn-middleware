@@ -154,8 +154,8 @@ const printMessage = async function (message) {
         const byteOfElement = converter(message.body, offset, 1) //16
 
         for (let i = 0; i < numOfElements; i++) {
-          console.log(val.id)
-          
+          console.log(val.id, numOfElements, byteOfElement)
+
           const plctag = json_machines[machineId - 1].full_json.plctags.find((tag) => {
             return tag.id === val.id
           })
