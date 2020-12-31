@@ -91,7 +91,7 @@ const printMessage = async function (message) {
     customerId = res.rows[0].company_id
     machineId = res.rows[0].machine_id
     _machineId = machineId
-    
+
     if (!machineId) {
       console.log(`Machine is not assigned to device ${deviceId}`)
       
@@ -130,6 +130,7 @@ const printMessage = async function (message) {
     const rowsToInsert = []
     const utilizationRowsToInsert = []
     const energyConsumptionRowsToInsert = []
+    const runningRowsToInsert = []
     const groupNum = converter(message.body, 1, 4)
 
     const sendingData = []
@@ -194,7 +195,6 @@ const printMessage = async function (message) {
         const byteOfElement = converter(message.body, offset, 1) //16
 
         for (let i = 0; i < numOfElements; i++) {
-          // console.log(val.id, numOfElements, byteOfElement)
 
           const plctag = json_machines[_machineId - 1].full_json.plctags.find((tag) => {
             return tag.id === val.id
@@ -202,8 +202,6 @@ const printMessage = async function (message) {
 
           if (plctag) {
             const { type } = plctag
-
-            // console.log('tagId: ', val.id, 'machineId: ', machineId, 'byteOfElement: ', byteOfElement)
 
             val.values.push(getTagValue(message.body, offset, byteOfElement, type))
           } else {
@@ -229,6 +227,8 @@ const printMessage = async function (message) {
             utilizationRowsToInsert.push(queryValues)
           } else if (res.rows[0].tag_name === 'energy_consumption') {
             energyConsumptionRowsToInsert.push(queryValues)
+          } else if (res.rows[0].tag_name === 'running') {
+            runningRowsToInsert.push(queryValues)
           }
         }
         
@@ -281,13 +281,15 @@ const printMessage = async function (message) {
       await db.query(pgFormat('INSERT INTO device_data(device_id, customer_id, machine_id, tag_id, timestamp, values) VALUES %L', rowsToInsert))
 
       if (utilizationRowsToInsert.length) {
-        // console.log(utilizationRowsToInsert)
         await db.query(pgFormat('INSERT INTO utilizations(device_id, customer_id, machine_id, tag_id, timestamp, values) VALUES %L', utilizationRowsToInsert))
       }
 
       if (energyConsumptionRowsToInsert.length) {
-        // console.log(energyConsumptionRowsToInsert)
         await db.query(pgFormat('INSERT INTO energy_consumptions(device_id, customer_id, machine_id, tag_id, timestamp, values) VALUES %L', energyConsumptionRowsToInsert))
+      }
+
+      if (runningRowsToInsert.length) {
+        await db.query(pgFormat('INSERT INTO runnings(device_id, customer_id, machine_id, tag_id, timestamp, values) VALUES %L', energyConsumptionRowsToInsert))
       }
     } catch (error) {
       console.log('Inserting into database failed.')
