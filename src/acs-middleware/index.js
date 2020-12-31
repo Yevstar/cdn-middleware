@@ -289,10 +289,11 @@ const printMessage = async function (message) {
       }
 
       if (runningRowsToInsert.length) {
-        await db.query(pgFormat('INSERT INTO runnings(device_id, customer_id, machine_id, tag_id, timestamp, values) VALUES %L', energyConsumptionRowsToInsert))
+        await db.query(pgFormat('INSERT INTO runnings(device_id, customer_id, machine_id, tag_id, timestamp, values) VALUES %L', runningRowsToInsert))
       }
     } catch (error) {
       console.log('Inserting into database failed.')
+      console.log(rowsToInsert)
       console.log(error)
     }
   }
