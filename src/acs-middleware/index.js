@@ -193,18 +193,17 @@ const printMessage = async function (message) {
         val.values = []
         const numOfElements = converter(message.body, offset, 1) //15
         const byteOfElement = converter(message.body, offset, 1) //16
-        let tagName
+        let plctag
 
         for (let i = 0; i < numOfElements; i++) {
 
-          const plctag = json_machines[_machineId - 1].full_json.plctags.find((tag) => {
+          plctag = json_machines[_machineId - 1].full_json.plctags.find((tag) => {
             return tag.id === val.id
           })
 
           if (plctag) {
-            const { name, type } = plctag
+            const { type } = plctag
 
-            tagName = name
             val.values.push(getTagValue(message.body, offset, byteOfElement, type))
           } else {
             console.log('Can\'t find tag', val.id, offset)
@@ -215,7 +214,7 @@ const printMessage = async function (message) {
 
         const queryValues = [deviceId, customerId, _machineId, val.id, group.timestamp, JSON.stringify(val.values)]
 
-        console.log('deviceId:', deviceId, '\tconfiguration: ', _machineId, '\ttag name: ', tagName, '\tvalues: ', val.values)
+        console.log('deviceId:', deviceId, '  configuration: ', _machineId, plctag.name, val.id, plctag.type, 'values: ', JSON.stringify(val.values))
 
         // check if the tag is utilization
         try {
