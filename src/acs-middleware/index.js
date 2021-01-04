@@ -249,7 +249,7 @@ const printMessage = async function (message) {
 
         // check if the tag is alarms
         try {
-          res = await db.query('SELECT * FROM alarm_types WHERE configuration_id = $1 AND tag_id = $2', [_machineId, val.id])
+          res = await db.query('SELECT * FROM alarm_types WHERE machine_id = $1 AND tag_id = $2', [_machineId, val.id])
         } catch (error) {
           console.log('Qeury from tags table failed.')
 
