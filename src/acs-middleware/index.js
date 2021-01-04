@@ -368,6 +368,7 @@ module.exports = {
 
       json_machines[0].full_json.plctags.forEach((plctag) => {
         if (plctag.id === 12) {
+          db_batch_blender_plctags.push(plctag)
           plctag.dependents.forEach((dependent) => {
             db_batch_blender_plctags.push(dependent)
           })
@@ -377,6 +378,8 @@ module.exports = {
       })
 
       json_machines[0].full_json.plctags = db_batch_blender_plctags
+
+      console.log(json_machines[0].full_json.plctags)
     }
 
     senderClient = EventHubClient.createFromConnectionString(senderConnectionString, 'acsioteventhub1');
