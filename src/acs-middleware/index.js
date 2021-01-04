@@ -59,6 +59,8 @@ const printMessage = async function (message) {
       return !!(slicedBuff.readUInt8())
     } else if (type === 'int16') {
       return slicedBuff.readInt16BE()
+    } else if (type === 'uint16') {
+      return slicedBuff.readUInt16BE()
     } if (type === 'float') {
       return slicedBuff.readFloatBE()
     } else if (type === 'uint32') {
@@ -129,16 +131,12 @@ const printMessage = async function (message) {
     return
   }
 
-  if (deviceId === 9990000001) {
-    // console.log(message.body)
-  }
-  
   const commandNumber = converter(message.body, 0, 1)
 
   if (commandNumber === 245 || commandNumber === 246) {
-    if (commandNumber === 246) {
-      printLongText(message.body)
-    }
+    // if (commandNumber === 246) {
+    //   printLongText(message.body)
+    // }
 
     const rowsToInsert = []
     const utilizationRowsToInsert = []
