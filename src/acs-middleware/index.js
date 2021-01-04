@@ -215,8 +215,8 @@ const printMessage = async function (message) {
 
         const queryValues = [deviceId, customerId, _machineId, val.id, group.timestamp, JSON.stringify(val.values)]
 
-        console.log('deviceId: ', deviceId, 'configuration: ', _machineId, 'tag name: ', tagName, 'values: ', val.values)
-        
+        console.log('deviceId:', deviceId, '\tconfiguration: ', _machineId, '\ttag name: ', tagName, '\tvalues: ', val.values)
+
         // check if the tag is utilization
         try {
           res = await db.query('SELECT * FROM tags WHERE configuration_id = $1 AND tag_id = $2', [_machineId, val.id])
