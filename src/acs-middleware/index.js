@@ -127,6 +127,10 @@ const printMessage = async function (message) {
   const commandNumber = converter(message.body, 0, 1)
 
   if (commandNumber === 245 || commandNumber === 246) {
+    if (commandNumber === 246) {
+      console.log(commandNumber)
+    }
+    
     const rowsToInsert = []
     const utilizationRowsToInsert = []
     const energyConsumptionRowsToInsert = []
