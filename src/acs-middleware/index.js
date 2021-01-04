@@ -21,6 +21,15 @@ const printError = function (err) {
   console.log(err.message)
 }
 
+function printLongText(longtext) {
+  let offset
+
+  while(offset < longtext.length) {
+    console.log(longtext.slice(offset, offset + 30))
+    offset += 30
+  }
+}
+
 const printMessage = async function (message) {
   let offset = 0;
 
@@ -128,9 +137,9 @@ const printMessage = async function (message) {
 
   if (commandNumber === 245 || commandNumber === 246) {
     if (commandNumber === 246) {
-      console.log(commandNumber)
+      printLongText(message.body)
     }
-    
+
     const rowsToInsert = []
     const utilizationRowsToInsert = []
     const energyConsumptionRowsToInsert = []
