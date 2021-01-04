@@ -220,7 +220,7 @@ const printMessage = async function (message) {
         let plctag
 
         for (let i = 0; i < numOfElements; i++) {
-          console.log(_machineId)
+          console.log(_machineId, commandNumber, deviceId)
           plctag = json_machines[_machineId - 1].full_json.plctags.find((tag) => {
             return tag.id === val.id
           })
@@ -376,8 +376,6 @@ module.exports = {
       })
 
       json_machines[0].full_json.plctags = db_batch_blender_plctags
-
-      console.log(json_machines[0].full_json.plctags)
     }
 
     senderClient = EventHubClient.createFromConnectionString(senderConnectionString, 'acsioteventhub1');
