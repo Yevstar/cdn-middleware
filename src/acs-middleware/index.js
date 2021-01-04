@@ -230,7 +230,7 @@ const printMessage = async function (message) {
 
             val.values.push(getTagValue(message.body, offset, byteOfElement, type))
           } else {
-            printLongText(message.body)
+            // printLongText(message.body)
             console.log('Can\'t find tag', val.id, offset)
 
             return
