@@ -120,6 +120,10 @@ const printMessage = async function (message) {
       
       return
     }
+  } else {
+    console.log('Can\'t find device')
+
+    return
   }
 
   if (!Buffer.isBuffer(message.body)) {
