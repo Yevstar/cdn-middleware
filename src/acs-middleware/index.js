@@ -193,6 +193,7 @@ const printMessage = async function (message) {
         val.values = []
         const numOfElements = converter(message.body, offset, 1) //15
         const byteOfElement = converter(message.body, offset, 1) //16
+        let tagName
 
         for (let i = 0; i < numOfElements; i++) {
 
@@ -201,8 +202,9 @@ const printMessage = async function (message) {
           })
 
           if (plctag) {
-            const { type } = plctag
+            const { name, type } = plctag
 
+            tagName = name
             val.values.push(getTagValue(message.body, offset, byteOfElement, type))
           } else {
             console.log('Can\'t find tag', val.id, offset)
@@ -213,6 +215,8 @@ const printMessage = async function (message) {
 
         const queryValues = [deviceId, customerId, _machineId, val.id, group.timestamp, JSON.stringify(val.values)]
 
+        console.log('deviceId: ', deviceId, 'configuration: ', _machineId, 'tag name: ', tagName, 'values: ', val.values)
+        
         // check if the tag is utilization
         try {
           res = await db.query('SELECT * FROM tags WHERE configuration_id = $1 AND tag_id = $2', [_machineId, val.id])
@@ -277,7 +281,7 @@ const printMessage = async function (message) {
 
     try {
 
-      console.log(rowsToInsert)
+      // console.log(rowsToInsert)
       await db.query(pgFormat('INSERT INTO device_data(device_id, customer_id, machine_id, tag_id, timestamp, values) VALUES %L', rowsToInsert))
 
       if (utilizationRowsToInsert.length) {
