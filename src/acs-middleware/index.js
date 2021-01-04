@@ -224,7 +224,6 @@ const printMessage = async function (message) {
         let plctag
 
         for (let i = 0; i < numOfElements; i++) {
-          console.log(_machineId, commandNumber, deviceId)
           plctag = json_machines[_machineId - 1].full_json.plctags.find((tag) => {
             return tag.id === val.id
           })
