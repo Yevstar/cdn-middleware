@@ -142,6 +142,7 @@ const printMessage = async function (message) {
     const utilizationRowsToInsert = []
     const energyConsumptionRowsToInsert = []
     const runningRowsToInsert = []
+    const alarmsRowsToInsert = []
     const groupNum = converter(message.body, 1, 4)
 
     const sendingData = []
@@ -227,7 +228,7 @@ const printMessage = async function (message) {
 
         console.log('deviceId:', deviceId, '  configuration: ', _machineId, plctag.name, val.id, plctag.type, 'values: ', JSON.stringify(val.values))
 
-        // check if the tag is utilization
+        // check if the tag is utilization/energy_consumption/running
         try {
           res = await db.query('SELECT * FROM tags WHERE configuration_id = $1 AND tag_id = $2', [_machineId, val.id])
         } catch (error) {
@@ -244,6 +245,19 @@ const printMessage = async function (message) {
           } else if (res.rows[0].tag_name === 'running') {
             runningRowsToInsert.push(queryValues)
           }
+        }
+
+        // check if the tag is alarms
+        try {
+          res = await db.query('SELECT * FROM alarm_types WHERE configuration_id = $1 AND tag_id = $2', [_machineId, val.id])
+        } catch (error) {
+          console.log('Qeury from tags table failed.')
+
+          return
+        }
+
+        if (res && res.rows.length > 0) {
+          alarmsRowsToInsert.push(queryValues)
         }
         
         sendingData.push({
@@ -304,6 +318,10 @@ const printMessage = async function (message) {
 
       if (runningRowsToInsert.length) {
         await db.query(pgFormat('INSERT INTO runnings(device_id, customer_id, machine_id, tag_id, timestamp, values) VALUES %L', runningRowsToInsert))
+      }
+
+      if (alarmsRowsToInsert.length) {
+        await db.query(pgFormat('INSERT INTO alarms(device_id, customer_id, machine_id, tag_id, timestamp, values) VALUES %L', alarmsRowsToInsert))
       }
     } catch (error) {
       console.log('Inserting into database failed.')
