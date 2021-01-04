@@ -22,7 +22,7 @@ const printError = function (err) {
 }
 
 function printLongText(longtext) {
-  let offset
+  let offset = 0
 
   while(offset < longtext.length) {
     console.log(longtext.slice(offset, offset + 30))
