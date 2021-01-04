@@ -346,7 +346,7 @@ const printMessage = async function (message) {
 
 async function getPlcConfigs() {
   try {
-    const res = await db.query('SELECT * FROM machines')
+    const res = await db.query('SELECT * FROM machines ORDER BY id')
 
     return res.rows
   } catch (error) {
@@ -367,13 +367,11 @@ module.exports = {
       const db_batch_blender_plctags = []
 
       json_machines[0].full_json.plctags.forEach((plctag) => {
+        db_batch_blender_plctags.push(plctag)
         if (plctag.id === 12) {
-          // db_batch_blender_plctags.push(plctag)
           plctag.dependents.forEach((dependent) => {
             db_batch_blender_plctags.push(dependent)
           })
-        } else {
-          db_batch_blender_plctags.push(plctag)
         }
       })
 
