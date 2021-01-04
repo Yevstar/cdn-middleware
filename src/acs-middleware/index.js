@@ -73,7 +73,19 @@ const printMessage = async function (message) {
   let deviceId = message.annotations['iothub-connection-device-id']
   
   // if (deviceId === 'TESTACS157') deviceId = 1234567157   // BD Batch Blender
-  if (deviceId === 'TESTACS157') deviceId = 9990000004  // GH Gravimetric Extrusion Control Hopper
+  // if (deviceId === 'TESTACS157') deviceId = 9990000004  // GH Gravimetric Extrusion Control Hopper
+  // if (deviceId === 'TESTACS157') deviceId = 9990000001  // Accumeter Ovation Continuous Blender
+  // if (deviceId === 'TESTACS157') deviceId = 9990000004  // GH-F Gravimetric Additive Feeder
+  // if (deviceId === 'TESTACS157') deviceId = 5234567157  // VTC Plus Conveying System
+  // if (deviceId === 'TESTACS157') deviceId = 6234567157  // NGX Dryer
+  // if (deviceId === 'TESTACS157') deviceId = 7234567157  // NGX Nomad Dryer
+  // if (deviceId === 'TESTACS157') deviceId = 8234567157  // T50 Central Granulator
+  // if (deviceId === 'TESTACS157') deviceId = 9234567157  // GP Portable Chiller
+  // if (deviceId === 'TESTACS157') deviceId = 10234567157  // HE Central Chiller
+  // if (deviceId === 'TESTACS157') deviceId = 11234567157  // TrueTemp TCU
+
+  if (deviceId === 'TESTACS157') deviceId = 8880000001   // BD Batch Blender
+  // if (deviceId === 'TESTACS157') deviceId = 8880000001  // GH Gravimetric Extrusion Control Hopper
   // if (deviceId === 'TESTACS157') deviceId = 9990000001  // Accumeter Ovation Continuous Blender
   // if (deviceId === 'TESTACS157') deviceId = 9990000004  // GH-F Gravimetric Additive Feeder
   // if (deviceId === 'TESTACS157') deviceId = 5234567157  // VTC Plus Conveying System
