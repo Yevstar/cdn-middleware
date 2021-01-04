@@ -73,7 +73,7 @@ const printMessage = async function (message) {
   let deviceId = message.annotations['iothub-connection-device-id']
   
   // if (deviceId === 'TESTACS157') deviceId = 1234567157   // BD Batch Blender
-  if (deviceId === 'TESTACS157') deviceId = 9990000003  // GH Gravimetric Extrusion Control Hopper
+  if (deviceId === 'TESTACS157') deviceId = 9990000004  // GH Gravimetric Extrusion Control Hopper
   // if (deviceId === 'TESTACS157') deviceId = 9990000001  // Accumeter Ovation Continuous Blender
   // if (deviceId === 'TESTACS157') deviceId = 9990000004  // GH-F Gravimetric Additive Feeder
   // if (deviceId === 'TESTACS157') deviceId = 5234567157  // VTC Plus Conveying System
