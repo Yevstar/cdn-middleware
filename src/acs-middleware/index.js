@@ -368,7 +368,7 @@ module.exports = {
 
       json_machines[0].full_json.plctags.forEach((plctag) => {
         if (plctag.id === 12) {
-          db_batch_blender_plctags.push(plctag)
+          // db_batch_blender_plctags.push(plctag)
           plctag.dependents.forEach((dependent) => {
             db_batch_blender_plctags.push(dependent)
           })
