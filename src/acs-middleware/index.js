@@ -341,7 +341,6 @@ const printMessage = async function (message) {
       }
     } catch (error) {
       console.log('Inserting into database failed.')
-      console.log(rowsToInsert)
       console.log(error)
     }
   }
