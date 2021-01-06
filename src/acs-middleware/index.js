@@ -92,8 +92,8 @@ const printMessage = async function (message) {
   // if (deviceId === 'TESTACS157') deviceId = 8880000006  // NGX Dryer
   // if (deviceId === 'TESTACS157') deviceId = 8880000007  // NGX Nomad Dryer
   // if (deviceId === 'TESTACS157') deviceId = 8880000008  // T50 Central Granulator
-  if (deviceId === 'TESTACS157') deviceId = 8880000009  // GP Portable Chiller
-  // if (deviceId === 'TESTACS157') deviceId = 10234567157  // HE Central Chiller
+  // if (deviceId === 'TESTACS157') deviceId = 8880000009  // GP Portable Chiller
+  if (deviceId === 'TESTACS157') deviceId = 88800000010  // HE Central Chiller
   // if (deviceId === 'TESTACS157') deviceId = 11234567157  // TrueTemp TCU
   
   let customerId = 0
