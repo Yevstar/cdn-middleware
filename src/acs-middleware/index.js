@@ -88,8 +88,8 @@ const printMessage = async function (message) {
   // if (deviceId === 'TESTACS157') deviceId = 8880000003  // GH Gravimetric Extrusion Control Hopper
   // if (deviceId === 'TESTACS157') deviceId = 8880000002  // Accumeter Ovation Continuous Blender
   // if (deviceId === 'TESTACS157') deviceId = 8880000004  // GH-F Gravimetric Additive Feeder
-  if (deviceId === 'TESTACS157') deviceId = 8880000005  // VTC Plus Conveying System
-  // if (deviceId === 'TESTACS157') deviceId = 6234567157  // NGX Dryer
+  // if (deviceId === 'TESTACS157') deviceId = 8880000005  // VTC Plus Conveying System
+  if (deviceId === 'TESTACS157') deviceId = 8880000006  // NGX Dryer
   // if (deviceId === 'TESTACS157') deviceId = 7234567157  // NGX Nomad Dryer
   // if (deviceId === 'TESTACS157') deviceId = 8234567157  // T50 Central Granulator
   // if (deviceId === 'TESTACS157') deviceId = 9234567157  // GP Portable Chiller
