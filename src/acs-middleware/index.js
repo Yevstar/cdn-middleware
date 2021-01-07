@@ -278,7 +278,8 @@ const printMessage = async function (message) {
             deviceId: deviceId,
             machineId: machineId,
             tagId: val.id,
-            values: val.values
+            values: val.values,
+            timestamp: group.timestamp
           })
         }
         
@@ -287,8 +288,7 @@ const printMessage = async function (message) {
             'deviceId': deviceId,
             'machineId': _machineId,
             'tagId': val.id,
-            'values': val.values,
-            'timestamp': group.timestamp
+            'values': val.values
           }
         })
 
