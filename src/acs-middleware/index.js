@@ -84,11 +84,11 @@ const printMessage = async function (message) {
   // if (deviceId === 'TESTACS157') deviceId = 10234567157  // HE Central Chiller
   // if (deviceId === 'TESTACS157') deviceId = 11234567157  // TrueTemp TCU
 
-  // if (deviceId === 'TESTACS157') deviceId = 8880000001   // BD Batch Blender
+  if (deviceId === 'TESTACS157') deviceId = 8880000001   // BD Batch Blender
   // if (deviceId === 'TESTACS157') deviceId = 8880000003  // GH Gravimetric Extrusion Control Hopper
   // if (deviceId === 'TESTACS157') deviceId = 8880000002  // Accumeter Ovation Continuous Blender
   // if (deviceId === 'TESTACS157') deviceId = 8880000004  // GH-F Gravimetric Additive Feeder
-  if (deviceId === 'TESTACS157') deviceId = 8880000005  // VTC Plus Conveying System
+  // if (deviceId === 'TESTACS157') deviceId = 8880000005  // VTC Plus Conveying System
   // if (deviceId === 'TESTACS157') deviceId = 8880000006  // NGX Dryer
   // if (deviceId === 'TESTACS157') deviceId = 8880000007  // NGX Nomad Dryer
   // if (deviceId === 'TESTACS157') deviceId = 8880000008  // T50 Central Granulator
@@ -287,7 +287,8 @@ const printMessage = async function (message) {
             'deviceId': deviceId,
             'machineId': _machineId,
             'tagId': val.id,
-            'values': val.values
+            'values': val.values,
+            'timestamp': group.timestamp
           }
         })
 
