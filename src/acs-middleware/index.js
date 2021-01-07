@@ -274,6 +274,12 @@ const printMessage = async function (message) {
 
         if (res && res.rows.length > 0) {
           alarmsRowsToInsert.push(queryValues)
+          pusher.trigger('product.alarm.channel', 'alarm.created', {
+            deviceId: deviceId,
+            machineId: machineId,
+            tagId: val.id,
+            values: val.values
+          })
         }
         
         sendingData.push({
@@ -286,29 +292,6 @@ const printMessage = async function (message) {
         })
 
         rowsToInsert.push(queryValues)
-
-        // try {
-        //   res = await dbClient.query('SELECT * FROM alarm_types WHERE tag_id = $1 AND machine_id = $2', [val.id, machineId])
-        //   if (res && res.rows.length > 0) {
-        //     pusher.trigger('product.alarm.channel', 'alarm.created', {
-        //       deviceId: deviceId,
-        //       machineId: machineId,
-        //       tagId: val.id,
-        //       values: val.values
-        //     })
-        //   }
-
-        //   console.log({
-        //     'deviceId': deviceId,
-        //     'machineId': machineId,
-        //     'tagId': val.id,
-        //     'values': val.values
-        //   })
-        //   group.values.push(val)
-        // } catch (error) {
-        //   console.log('Inserting into database failed.')
-        //   console.log(error)
-        // }
       }
     }
 
