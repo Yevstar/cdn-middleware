@@ -159,6 +159,13 @@ const printMessage = async function (message) {
     const energyConsumptionRowsToInsert = []
     const runningRowsToInsert = []
     const alarmsRowsToInsert = []
+    const deviceTypeRowsToInsert = []
+    const softwareVersionRowsToInsert = []
+    const softwareBuildRowsToInsert = []
+    const snMonthRowsToInsert = []
+    const snYearRowsToInsert = []
+    const snUnitRowsToInsert = []
+
     const groupNum = converter(message.body, 1, 4)
 
     const sendingData = []
@@ -260,6 +267,18 @@ const printMessage = async function (message) {
             energyConsumptionRowsToInsert.push(queryValues)
           } else if (res.rows[0].tag_name === 'running') {
             runningRowsToInsert.push(queryValues)
+          } else if (res.rows[0].tag_name === 'device_type') {
+            deviceTypeRowsToInsert.push(queryValues)
+          } else if (res.rows[0].tag_name === 'software_version') {
+            softwareVersionRowsToInsert.push(queryValues)
+          } else if (res.rows[0].tag_name === 'software_build') {
+            softwareBuildRowsToInsert.push(queryValues)
+          } else if (res.rows[0].tag_name === 'serial_number_month') {
+            snMonthRowsToInsert.push(queryValues)
+          } else if (res.rows[0].tag_name === 'serial_number_year') {
+            snYearRowsToInsert.push(queryValues)
+          } else if (res.rows[0].tag_name === 'serial_number_unit') {
+            snUnitRowsToInsert.push(queryValues)
           }
         }
 
@@ -322,6 +341,30 @@ const printMessage = async function (message) {
 
       if (alarmsRowsToInsert.length) {
         await db.query(pgFormat('INSERT INTO alarms(device_id, customer_id, machine_id, tag_id, timestamp, values) VALUES %L', alarmsRowsToInsert))
+      }
+
+      if (deviceTypeRowsToInsert.length) {
+        await db.query(pgFormat('INSERT INTO device_types(device_id, customer_id, machine_id, tag_id, timestamp, values) VALUES %L', deviceTypeRowsToInsert))
+      }
+
+      if (softwareVersionRowsToInsert.length) {
+        await db.query(pgFormat('INSERT INTO software_version(device_id, customer_id, machine_id, tag_id, timestamp, values) VALUES %L', softwareVersionRowsToInsert))
+      }
+
+      if (softwareBuildRowsToInsert.length) {
+        await db.query(pgFormat('INSERT INTO software_builds(device_id, customer_id, machine_id, tag_id, timestamp, values) VALUES %L', softwareBuildRowsToInsert))
+      }
+
+      if (snMonthRowsToInsert.length) {
+        await db.query(pgFormat('INSERT INTO serial_number_month(device_id, customer_id, machine_id, tag_id, timestamp, values) VALUES %L', snMonthRowsToInsert))
+      }
+
+      if (snYearRowsToInsert.length) {
+        await db.query(pgFormat('INSERT INTO serial_number_year(device_id, customer_id, machine_id, tag_id, timestamp, values) VALUES %L', snYearRowsToInsert))
+      }
+
+      if (snUnitRowsToInsert.length) {
+        await db.query(pgFormat('INSERT INTO serial_number_unit(device_id, customer_id, machine_id, tag_id, timestamp, values) VALUES %L', snUnitRowsToInsert))
       }
     } catch (error) {
       console.log('Inserting into database failed.')
