@@ -261,6 +261,8 @@ const printMessage = async function (message) {
         }
 
         if (res && res.rows.length > 0) {
+          console.log(res.rows[0].tag_name)
+          
           if (res.rows[0].tag_name === 'capacity_utilization') {
             utilizationRowsToInsert.push(queryValues)
           } else if (res.rows[0].tag_name === 'energy_consumption') {
