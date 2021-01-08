@@ -256,7 +256,7 @@ const printMessage = async function (message) {
 
         // check if the tag is utilization/energy_consumption/running
         try {
-          tagObj = tags.filter((tag) => parseInt(tag.configuration_id) === parseInt(_machineId) && parseInt(tag.tag_id) === parseInt(val.id))
+          tagObj = tags.find((tag) => parseInt(tag.configuration_id) === parseInt(_machineId) && parseInt(tag.tag_id) === parseInt(val.id))
         } catch (error) {
           console.log('Qeury from tags table failed.')
 
@@ -264,9 +264,8 @@ const printMessage = async function (message) {
         }
 
         if (tagObj) {
-          tagObj = tagObj[0]
           console.log(tagObj)
-          
+
           if (tagObj.tag_name === 'capacity_utilization') {
             utilizationRowsToInsert.push(queryValues)
           } else if (tagObj.tag_name === 'energy_consumption') {
