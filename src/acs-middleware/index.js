@@ -325,7 +325,7 @@ const printMessage = async function (message) {
     try {
 
       // console.log(rowsToInsert)
-      // await db.query(pgFormat('INSERT INTO device_data(device_id, customer_id, machine_id, tag_id, timestamp, values) VALUES %L', rowsToInsert))
+      await db.query(pgFormat('INSERT INTO device_data(device_id, customer_id, machine_id, tag_id, timestamp, values) VALUES %L', rowsToInsert))
 
       if (utilizationRowsToInsert.length) {
         await db.query(pgFormat('INSERT INTO utilizations(device_id, customer_id, machine_id, tag_id, timestamp, values) VALUES %L', utilizationRowsToInsert))
