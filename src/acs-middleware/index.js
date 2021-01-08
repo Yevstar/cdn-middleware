@@ -16,6 +16,7 @@ const pusher = new Pusher({
 })
 
 let json_machines
+let tags
 
 const printError = function (err) {
   console.log(err.message)
@@ -251,35 +252,37 @@ const printMessage = async function (message) {
 
         console.log('deviceId:', deviceId, '  configuration: ', _machineId, plctag.name, val.id, plctag.type, 'values: ', JSON.stringify(val.values))
 
+        let tagObj = null
+
         // check if the tag is utilization/energy_consumption/running
         try {
-          res = await db.query('SELECT * FROM tags WHERE configuration_id = $1 AND tag_id = $2', [_machineId, val.id])
+          tagObj = tags.filter((tag) => parseInt(tag.configuration_id) === parseInt(_machineId) && parseInt(tag.tag_id) === parseInt(val.id))
         } catch (error) {
           console.log('Qeury from tags table failed.')
 
           return
         }
 
-        if (res && res.rows.length > 0) {
-          console.log(res.rows[0].tag_name)
-          
-          if (res.rows[0].tag_name === 'capacity_utilization') {
+        if (tagObj) {
+          console.log(tagObj)
+
+          if (tagObj.tag_name === 'capacity_utilization') {
             utilizationRowsToInsert.push(queryValues)
-          } else if (res.rows[0].tag_name === 'energy_consumption') {
+          } else if (tagObj.tag_name === 'energy_consumption') {
             energyConsumptionRowsToInsert.push(queryValues)
-          } else if (res.rows[0].tag_name === 'running') {
+          } else if (tagObj.tag_name === 'running') {
             runningRowsToInsert.push(queryValues)
-          } else if (res.rows[0].tag_name === 'device_type') {
+          } else if (tagObj.tag_name === 'device_type') {
             deviceTypeRowsToInsert.push(queryValues)
-          } else if (res.rows[0].tag_name === 'software_version') {
+          } else if (tagObj.tag_name === 'software_version') {
             softwareVersionRowsToInsert.push(queryValues)
-          } else if (res.rows[0].tag_name === 'software_build') {
+          } else if (tagObj.tag_name === 'software_build') {
             softwareBuildRowsToInsert.push(queryValues)
-          } else if (res.rows[0].tag_name === 'serial_number_month') {
+          } else if (tagObj.tag_name === 'serial_number_month') {
             snMonthRowsToInsert.push(queryValues)
-          } else if (res.rows[0].tag_name === 'serial_number_year') {
+          } else if (tagObj.tag_name === 'serial_number_year') {
             snYearRowsToInsert.push(queryValues)
-          } else if (res.rows[0].tag_name === 'serial_number_unit') {
+          } else if (tagObj.tag_name === 'serial_number_unit') {
             snUnitRowsToInsert.push(queryValues)
           }
         }
@@ -386,6 +389,17 @@ async function getPlcConfigs() {
     return false
   }
 }
+async function getTags() {
+  try {
+    const res = await db.query('SELECT * FROM tags')
+
+    return res.rows
+  } catch (error) {
+    console.log(error)
+
+    return false
+  }
+}
 
 module.exports = {
   start: async function() {
@@ -409,6 +423,8 @@ module.exports = {
       json_machines[0].full_json.plctags = db_batch_blender_plctags
     }
 
+    tags = await getTags()
+    
     senderClient = EventHubClient.createFromConnectionString(senderConnectionString, 'acsioteventhub1');
 
     let ehClient
