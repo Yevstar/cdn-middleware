@@ -71,6 +71,10 @@ const printMessage = async function (message) {
     return ret
   }
 
+  function buildInsert(table) {
+    return 'INSERT INTO ${table}(device_id, customer_id, machine_id, tag_id, timestamp, values) VALUES %L'
+  }
+
   let deviceId = message.annotations['iothub-connection-device-id']
   
   // if (deviceId === 'TESTACS157') deviceId = 1234567157   // BD Batch Blender
@@ -149,23 +153,54 @@ const printMessage = async function (message) {
   }
 
   const commandNumber = converter(message.body, 0, 1)
+  const utilizationRowsToInsert = []
+  const energyConsumptionRowsToInsert = []
+  const runningRowsToInsert = []
+  const deviceTypeRowsToInsert = []
+  const softwareVersionRowsToInsert = []
+  const softwareBuildRowsToInsert = []
+  const snMonthRowsToInsert = []
+  const snYearRowsToInsert = []
+  const snUnitRowsToInsert = []
 
   if (commandNumber === 245 || commandNumber === 246) {
-    // if (commandNumber === 246) {
-    //   printLongText(message.body)
-    // }
-
-    const rowsToInsert = []
-    const utilizationRowsToInsert = []
-    const energyConsumptionRowsToInsert = []
-    const runningRowsToInsert = []
-    const alarmsRowsToInsert = []
-    const deviceTypeRowsToInsert = []
-    const softwareVersionRowsToInsert = []
-    const softwareBuildRowsToInsert = []
-    const snMonthRowsToInsert = []
-    const snYearRowsToInsert = []
-    const snUnitRowsToInsert = []
+    const insertRows = [{
+      property: 'capacity_utilization',
+      table: 'utilizations',
+      rows: utilizationRowsToInsert
+    }, {
+      property: 'energy_consumption',
+      table: 'energy_consumptions',
+      rows: energyConsumptionRowsToInsert
+    }, {
+      property: 'running',
+      table: 'runnings',
+      rows: runningRowsToInsert
+    }, {
+      property: 'device_type',
+      table: 'device_type',
+      rows: deviceTypeRowsToInsert
+    }, {
+      property: 'deviceData',
+      table: 'device_data',
+      rows: softwareVersionRowsToInsert
+    }, {
+      property: 'software_build',
+      table: 'software_builds',
+      rows: softwareBuildRowsToInsert
+    }, {
+      property: 'serial_number_month',
+      table: 'serial_number_month',
+      rows: snMonthRowsToInsert
+    }, {
+      property: 'serial_number_year',
+      table: 'serial_number_year',
+      rows: snYearRowsToInsert
+    }, {
+      property: 'serial_number_unit',
+      table: 'serial_number_unit',
+      rows: snUnitRowsToInsert
+    }]
 
     const groupNum = converter(message.body, 1, 4)
 
@@ -266,25 +301,8 @@ const printMessage = async function (message) {
         if (tagObj) {
           console.log(tagObj)
 
-          if (tagObj.tag_name === 'capacity_utilization') {
-            utilizationRowsToInsert.push(queryValues)
-          } else if (tagObj.tag_name === 'energy_consumption') {
-            energyConsumptionRowsToInsert.push(queryValues)
-          } else if (tagObj.tag_name === 'running') {
-            runningRowsToInsert.push(queryValues)
-          } else if (tagObj.tag_name === 'device_type') {
-            deviceTypeRowsToInsert.push(queryValues)
-          } else if (tagObj.tag_name === 'software_version') {
-            softwareVersionRowsToInsert.push(queryValues)
-          } else if (tagObj.tag_name === 'software_build') {
-            softwareBuildRowsToInsert.push(queryValues)
-          } else if (tagObj.tag_name === 'serial_number_month') {
-            snMonthRowsToInsert.push(queryValues)
-          } else if (tagObj.tag_name === 'serial_number_year') {
-            snYearRowsToInsert.push(queryValues)
-          } else if (tagObj.tag_name === 'serial_number_unit') {
-            snUnitRowsToInsert.push(queryValues)
-          }
+          const insert = insertRows.find((insert) => insert.rows.length > 0)
+          if (insert) insert.rows.push(queryValues)
         }
 
         // check if the tag is alarms
@@ -328,48 +346,13 @@ const printMessage = async function (message) {
     }
 
     try {
-
-      // console.log(rowsToInsert)
-      await db.query(pgFormat('INSERT INTO device_data(device_id, customer_id, machine_id, tag_id, timestamp, values) VALUES %L', rowsToInsert))
-
-      if (utilizationRowsToInsert.length) {
-        await db.query(pgFormat('INSERT INTO utilizations(device_id, customer_id, machine_id, tag_id, timestamp, values) VALUES %L', utilizationRowsToInsert))
-      }
-
-      if (energyConsumptionRowsToInsert.length) {
-        await db.query(pgFormat('INSERT INTO energy_consumptions(device_id, customer_id, machine_id, tag_id, timestamp, values) VALUES %L', energyConsumptionRowsToInsert))
-      }
-
-      if (runningRowsToInsert.length) {
-        await db.query(pgFormat('INSERT INTO runnings(device_id, customer_id, machine_id, tag_id, timestamp, values) VALUES %L', runningRowsToInsert))
-      }
+      await db.query(pgFormat(buildInsert('device_data'), rowsToInsert))
+      
+      const insert = insertRows.find((insert) => insert.rows.length > 0)
+      if (insert) await db.query(pgFormat(buildInsert(insert.table), insert.rows))
 
       if (alarmsRowsToInsert.length) {
-        await db.query(pgFormat('INSERT INTO alarms(device_id, customer_id, machine_id, tag_id, timestamp, values) VALUES %L', alarmsRowsToInsert))
-      }
-
-      if (deviceTypeRowsToInsert.length) {
-        await db.query(pgFormat('INSERT INTO device_types(device_id, customer_id, machine_id, tag_id, timestamp, values) VALUES %L', deviceTypeRowsToInsert))
-      }
-
-      if (softwareVersionRowsToInsert.length) {
-        await db.query(pgFormat('INSERT INTO software_version(device_id, customer_id, machine_id, tag_id, timestamp, values) VALUES %L', softwareVersionRowsToInsert))
-      }
-
-      if (softwareBuildRowsToInsert.length) {
-        await db.query(pgFormat('INSERT INTO software_builds(device_id, customer_id, machine_id, tag_id, timestamp, values) VALUES %L', softwareBuildRowsToInsert))
-      }
-
-      if (snMonthRowsToInsert.length) {
-        await db.query(pgFormat('INSERT INTO serial_number_month(device_id, customer_id, machine_id, tag_id, timestamp, values) VALUES %L', snMonthRowsToInsert))
-      }
-
-      if (snYearRowsToInsert.length) {
-        await db.query(pgFormat('INSERT INTO serial_number_year(device_id, customer_id, machine_id, tag_id, timestamp, values) VALUES %L', snYearRowsToInsert))
-      }
-
-      if (snUnitRowsToInsert.length) {
-        await db.query(pgFormat('INSERT INTO serial_number_unit(device_id, customer_id, machine_id, tag_id, timestamp, values) VALUES %L', snUnitRowsToInsert))
+        await db.query(pgFormat(buildInsert('alarms'), alarmsRowsToInsert))
       }
     } catch (error) {
       console.log('Inserting into database failed.')
