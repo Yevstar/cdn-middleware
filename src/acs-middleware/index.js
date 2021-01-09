@@ -153,6 +153,9 @@ const printMessage = async function (message) {
   }
 
   const commandNumber = converter(message.body, 0, 1)
+
+  const rowsToInsert = []
+  const alarmsRowsToInsert = []
   const utilizationRowsToInsert = []
   const energyConsumptionRowsToInsert = []
   const runningRowsToInsert = []
