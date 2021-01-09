@@ -72,7 +72,7 @@ const printMessage = async function (message) {
   }
 
   function buildInsert(table) {
-    return 'INSERT INTO ${table}(device_id, customer_id, machine_id, tag_id, timestamp, values) VALUES %L'
+    return `INSERT INTO ${table}(device_id, customer_id, machine_id, tag_id, timestamp, values) VALUES %L`
   }
 
   let deviceId = message.annotations['iothub-connection-device-id']
