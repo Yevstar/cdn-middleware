@@ -181,7 +181,7 @@ const printMessage = async function (message) {
       rows: runningRowsToInsert
     }, {
       property: 'device_type',
-      table: 'device_type',
+      table: 'device_types',
       rows: deviceTypeRowsToInsert
     }, {
       property: 'deviceData',
@@ -302,6 +302,7 @@ const printMessage = async function (message) {
         }
 
         if (tagObj) {
+          tagObj.timestamp = group.timestamp
           console.log(tagObj)
 
           const insert = insertRows.find((insert) => insert.rows.length > 0)
