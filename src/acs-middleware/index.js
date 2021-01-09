@@ -350,13 +350,15 @@ const printMessage = async function (message) {
     }
 
     try {
-      await db.query(pgFormat(buildInsert('device_data'), rowsToInsert))
+      db.query(pgFormat(buildInsert('device_data'), rowsToInsert))
       
-      const insert = insertRows.find((insert) => insert.rows.length > 0)
-      if (insert) await db.query(pgFormat(buildInsert(insert.table), insert.rows))
+      insertRows.forEach((insert) => {
+        if (insert.rows.length)
+          db.query(pgFormat(buildInsert(insert.table), insert.rows))
+      })
 
       if (alarmsRowsToInsert.length) {
-        await db.query(pgFormat(buildInsert('alarms'), alarmsRowsToInsert))
+        db.query(pgFormat(buildInsert('alarms'), alarmsRowsToInsert))
       }
     } catch (error) {
       console.log('Inserting into database failed.')
