@@ -16,6 +16,7 @@ const pusher = new Pusher({
 })
 
 let json_machines
+let tags
 
 const printError = function (err) {
   console.log(err.message)
@@ -68,6 +69,10 @@ const printMessage = async function (message) {
     }
     
     return ret
+  }
+
+  function buildInsert(table) {
+    return `INSERT INTO ${table}(device_id, customer_id, machine_id, tag_id, timestamp, values) VALUES %L`
   }
 
   let deviceId = message.annotations['iothub-connection-device-id']
@@ -149,16 +154,57 @@ const printMessage = async function (message) {
 
   const commandNumber = converter(message.body, 0, 1)
 
-  if (commandNumber === 245 || commandNumber === 246) {
-    // if (commandNumber === 246) {
-    //   printLongText(message.body)
-    // }
+  const rowsToInsert = []
+  const alarmsRowsToInsert = []
+  const utilizationRowsToInsert = []
+  const energyConsumptionRowsToInsert = []
+  const runningRowsToInsert = []
+  const deviceTypeRowsToInsert = []
+  const softwareVersionRowsToInsert = []
+  const softwareBuildRowsToInsert = []
+  const snMonthRowsToInsert = []
+  const snYearRowsToInsert = []
+  const snUnitRowsToInsert = []
 
-    const rowsToInsert = []
-    const utilizationRowsToInsert = []
-    const energyConsumptionRowsToInsert = []
-    const runningRowsToInsert = []
-    const alarmsRowsToInsert = []
+  if (commandNumber === 245 || commandNumber === 246) {
+    const insertRows = [{
+      property: 'capacity_utilization',
+      table: 'utilizations',
+      rows: utilizationRowsToInsert
+    }, {
+      property: 'energy_consumption',
+      table: 'energy_consumptions',
+      rows: energyConsumptionRowsToInsert
+    }, {
+      property: 'running',
+      table: 'runnings',
+      rows: runningRowsToInsert
+    }, {
+      property: 'device_type',
+      table: 'device_types',
+      rows: deviceTypeRowsToInsert
+    }, {
+      property: 'software_version',
+      table: 'software_version',
+      rows: softwareVersionRowsToInsert
+    }, {
+      property: 'software_build',
+      table: 'software_builds',
+      rows: softwareBuildRowsToInsert
+    }, {
+      property: 'serial_number_month',
+      table: 'serial_number_month',
+      rows: snMonthRowsToInsert
+    }, {
+      property: 'serial_number_year',
+      table: 'serial_number_year',
+      rows: snYearRowsToInsert
+    }, {
+      property: 'serial_number_unit',
+      table: 'serial_number_unit',
+      rows: snUnitRowsToInsert
+    }]
+
     const groupNum = converter(message.body, 1, 4)
 
     const sendingData = []
@@ -244,23 +290,23 @@ const printMessage = async function (message) {
 
         console.log('deviceId:', deviceId, '  configuration: ', _machineId, plctag.name, val.id, plctag.type, 'values: ', JSON.stringify(val.values))
 
+        let tagObj = null
+
         // check if the tag is utilization/energy_consumption/running
         try {
-          res = await db.query('SELECT * FROM tags WHERE configuration_id = $1 AND tag_id = $2', [_machineId, val.id])
+          tagObj = tags.find((tag) => parseInt(tag.configuration_id) === parseInt(_machineId) && parseInt(tag.tag_id) === parseInt(val.id))
         } catch (error) {
           console.log('Qeury from tags table failed.')
 
           return
         }
 
-        if (res && res.rows.length > 0) {
-          if (res.rows[0].tag_name === 'capacity_utilization') {
-            utilizationRowsToInsert.push(queryValues)
-          } else if (res.rows[0].tag_name === 'energy_consumption') {
-            energyConsumptionRowsToInsert.push(queryValues)
-          } else if (res.rows[0].tag_name === 'running') {
-            runningRowsToInsert.push(queryValues)
-          }
+        if (tagObj) {
+          tagObj.timestamp = group.timestamp
+          console.log(tagObj)
+
+          const insert = insertRows.find((insert) => insert.property === tagObj.tag_name)
+          if (insert) insert.rows.push(queryValues)
         }
 
         // check if the tag is alarms
@@ -304,24 +350,15 @@ const printMessage = async function (message) {
     }
 
     try {
-
-      // console.log(rowsToInsert)
-      await db.query(pgFormat('INSERT INTO device_data(device_id, customer_id, machine_id, tag_id, timestamp, values) VALUES %L', rowsToInsert))
-
-      if (utilizationRowsToInsert.length) {
-        await db.query(pgFormat('INSERT INTO utilizations(device_id, customer_id, machine_id, tag_id, timestamp, values) VALUES %L', utilizationRowsToInsert))
-      }
-
-      if (energyConsumptionRowsToInsert.length) {
-        await db.query(pgFormat('INSERT INTO energy_consumptions(device_id, customer_id, machine_id, tag_id, timestamp, values) VALUES %L', energyConsumptionRowsToInsert))
-      }
-
-      if (runningRowsToInsert.length) {
-        await db.query(pgFormat('INSERT INTO runnings(device_id, customer_id, machine_id, tag_id, timestamp, values) VALUES %L', runningRowsToInsert))
-      }
+      db.query(pgFormat(buildInsert('device_data'), rowsToInsert))
+      
+      insertRows.forEach((insert) => {
+        if (insert.rows.length)
+          db.query(pgFormat(buildInsert(insert.table), insert.rows))
+      })
 
       if (alarmsRowsToInsert.length) {
-        await db.query(pgFormat('INSERT INTO alarms(device_id, customer_id, machine_id, tag_id, timestamp, values) VALUES %L', alarmsRowsToInsert))
+        db.query(pgFormat(buildInsert('alarms'), alarmsRowsToInsert))
       }
     } catch (error) {
       console.log('Inserting into database failed.')
@@ -333,6 +370,17 @@ const printMessage = async function (message) {
 async function getPlcConfigs() {
   try {
     const res = await db.query('SELECT * FROM machines ORDER BY id')
+
+    return res.rows
+  } catch (error) {
+    console.log(error)
+
+    return false
+  }
+}
+async function getTags() {
+  try {
+    const res = await db.query('SELECT * FROM tags')
 
     return res.rows
   } catch (error) {
@@ -364,6 +412,8 @@ module.exports = {
       json_machines[0].full_json.plctags = db_batch_blender_plctags
     }
 
+    tags = await getTags()
+    
     senderClient = EventHubClient.createFromConnectionString(senderConnectionString, 'acsioteventhub1');
 
     let ehClient
