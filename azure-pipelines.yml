@@ -1,4 +1,6 @@
 trigger:
+- master
+- staging
 - develop
 pool:
   vmImage: 'ubuntu-latest'
