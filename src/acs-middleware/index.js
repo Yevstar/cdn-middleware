@@ -126,7 +126,7 @@ const printMessage = async function (message) {
       return
     }
   } else {
-    console.log('Can\'t find device')
+    console.log('Can\'t find device -', 1106336153, message.body)
 
     return
   }
