@@ -350,16 +350,20 @@ const printMessage = async function (message) {
     }
 
     try {
-      db.query(pgFormat(buildInsert('device_data'), rowsToInsert))
+      const promises = []
+
+      promises.push(db.query(pgFormat(buildInsert('device_data'), rowsToInsert)))
       
       insertRows.forEach((insert) => {
         if (insert.rows.length)
-          db.query(pgFormat(buildInsert(insert.table), insert.rows))
+          promises.push(db.query(pgFormat(buildInsert(insert.table), insert.rows)))
       })
 
       if (alarmsRowsToInsert.length) {
-        db.query(pgFormat(buildInsert('alarms'), alarmsRowsToInsert))
+        promises.push(db.query(pgFormat(buildInsert('alarms'), alarmsRowsToInsert)))
       }
+
+      await Promise.all(promises)
     } catch (error) {
       console.log('Inserting into database failed.')
       console.log(error)
