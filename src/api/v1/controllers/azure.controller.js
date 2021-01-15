@@ -3,7 +3,11 @@ const { Message } = require('azure-iot-common')
 const { connectionString } = require('../../../config')
 
 function receiveFeedback(err, receiver) {
-  console.log(err)
+  if (err) {
+    console.log(err)
+
+    return
+  }
 
   receiver.on('message', (msg) => {
     console.log('Feedback message:')
