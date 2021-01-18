@@ -72,7 +72,10 @@ const printMessage = async function (message) {
   }
 
   function buildInsert(table) {
-    return `INSERT INTO ${table}(device_id, customer_id, machine_id, tag_id, timestamp, values) VALUES %L`
+    if (table === 'device_data')
+      return `INSERT INTO ${table}(device_id, customer_id, machine_id, tag_id, timestamp, created_at, values) VALUES %L`
+    else
+      return `INSERT INTO ${table}(device_id, customer_id, machine_id, tag_id, timestamp, values) VALUES %L`
   }
 
   let deviceId = message.annotations['iothub-connection-device-id']
@@ -288,6 +291,11 @@ const printMessage = async function (message) {
 
         const queryValues = [deviceId, customerId, _machineId, val.id, group.timestamp, JSON.stringify(val.values)]
 
+        const newDate = new Date();
+        newDate.setTime(group.timestamp * 1000);
+
+        const _queryValues = [deviceId, customerId, _machineId, val.id, group.timestamp, newDate.toUTCString(), JSON.stringify(val.values)]
+
         console.log('deviceId:', deviceId, '  configuration: ', _machineId, plctag.name, val.id, plctag.type, 'values: ', JSON.stringify(val.values))
 
         let tagObj = null
@@ -338,7 +346,7 @@ const printMessage = async function (message) {
           }
         })
 
-        rowsToInsert.push(queryValues)
+        rowsToInsert.push(_queryValues)
       }
     }
 
