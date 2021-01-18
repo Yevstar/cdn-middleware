@@ -9,10 +9,10 @@ async function connect() {
     host: db_host,
     database: db_database,
     password: db_password,
-    port: db_port,
-    ssl: {
-      rejectUnauthorized: false
-    }
+    port: db_port
+    // ssl: {
+    //   rejectUnauthorized: false
+    // }
   })
 
   await client.connect()
