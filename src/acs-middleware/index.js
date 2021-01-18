@@ -296,7 +296,7 @@ const printMessage = async function (message) {
 
         const _queryValues = [deviceId, customerId, _machineId, val.id, group.timestamp, newDate.toUTCString(), JSON.stringify(val.values)]
 
-        console.log('deviceId:', deviceId, '  configuration: ', _machineId, plctag.name, val.id, plctag.type, 'values: ', JSON.stringify(val.values))
+        console.log('deviceId:', deviceId, 'timestamp:', group.timestamp, 'configuration:', _machineId, plctag.name, val.id, plctag.type, 'values:', JSON.stringify(val.values))
 
         let tagObj = null
 
