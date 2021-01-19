@@ -155,6 +155,8 @@ const printMessage = async function (message) {
     return
   }
 
+  console.log(commandNumber)
+  
   const commandNumber = converter(message.body, 0, 1)
 
   const rowsToInsert = []
@@ -169,7 +171,7 @@ const printMessage = async function (message) {
   const snYearRowsToInsert = []
   const snUnitRowsToInsert = []
 
-  if (commandNumber === 245 || commandNumber === 246) {
+  if (commandNumber === 0xF7 || commandNumber === 246) {
     const insertRows = [{
       property: 'capacity_utilization',
       table: 'utilizations',
