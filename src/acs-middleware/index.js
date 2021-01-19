@@ -154,7 +154,6 @@ const printMessage = async function (message) {
 
     return
   }
-
   
   const commandNumber = converter(message.body, 0, 1)
   console.log(commandNumber)
