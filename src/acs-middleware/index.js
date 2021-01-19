@@ -155,9 +155,9 @@ const printMessage = async function (message) {
     return
   }
 
-  console.log(commandNumber)
   
   const commandNumber = converter(message.body, 0, 1)
+  console.log(commandNumber)
 
   const rowsToInsert = []
   const alarmsRowsToInsert = []
