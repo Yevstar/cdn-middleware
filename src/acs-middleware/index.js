@@ -361,25 +361,25 @@ const printMessage = async function (message) {
       console.log(error)
     }
 
-    try {
-      const promises = []
+    // try {
+    //   const promises = []
 
-      promises.push(db.query(pgFormat(buildInsert('device_data'), rowsToInsert)))
+    //   promises.push(db.query(pgFormat(buildInsert('device_data'), rowsToInsert)))
       
-      insertRows.forEach((insert) => {
-        if (insert.rows.length)
-          promises.push(db.query(pgFormat(buildInsert(insert.table), insert.rows)))
-      })
+    //   insertRows.forEach((insert) => {
+    //     if (insert.rows.length)
+    //       promises.push(db.query(pgFormat(buildInsert(insert.table), insert.rows)))
+    //   })
 
-      if (alarmsRowsToInsert.length) {
-        promises.push(db.query(pgFormat(buildInsert('alarms'), alarmsRowsToInsert)))
-      }
+    //   if (alarmsRowsToInsert.length) {
+    //     promises.push(db.query(pgFormat(buildInsert('alarms'), alarmsRowsToInsert)))
+    //   }
 
-      await Promise.all(promises)
-    } catch (error) {
-      console.log('Inserting into database failed.')
-      console.log(error)
-    }
+    //   await Promise.all(promises)
+    // } catch (error) {
+    //   console.log('Inserting into database failed.')
+    //   console.log(error)
+    // }
   }
 }
 
