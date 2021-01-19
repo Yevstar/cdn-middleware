@@ -154,9 +154,6 @@ const printMessage = async function (message) {
 
     return
   }
-  
-  const commandNumber = converter(message.body, 0, 1)
-  console.log(commandNumber)
 
   const rowsToInsert = []
   const alarmsRowsToInsert = []
@@ -170,214 +167,219 @@ const printMessage = async function (message) {
   const snYearRowsToInsert = []
   const snUnitRowsToInsert = []
 
-  if (commandNumber === 0xF7 || commandNumber === 246) {
-    const insertRows = [{
-      property: 'capacity_utilization',
-      table: 'utilizations',
-      rows: utilizationRowsToInsert
-    }, {
-      property: 'energy_consumption',
-      table: 'energy_consumptions',
-      rows: energyConsumptionRowsToInsert
-    }, {
-      property: 'running',
-      table: 'runnings',
-      rows: runningRowsToInsert
-    }, {
-      property: 'device_type',
-      table: 'device_types',
-      rows: deviceTypeRowsToInsert
-    }, {
-      property: 'software_version',
-      table: 'software_version',
-      rows: softwareVersionRowsToInsert
-    }, {
-      property: 'software_build',
-      table: 'software_builds',
-      rows: softwareBuildRowsToInsert
-    }, {
-      property: 'serial_number_month',
-      table: 'serial_number_month',
-      rows: snMonthRowsToInsert
-    }, {
-      property: 'serial_number_year',
-      table: 'serial_number_year',
-      rows: snYearRowsToInsert
-    }, {
-      property: 'serial_number_unit',
-      table: 'serial_number_unit',
-      rows: snUnitRowsToInsert
-    }]
+  const insertRows = [{
+    property: 'capacity_utilization',
+    table: 'utilizations',
+    rows: utilizationRowsToInsert
+  }, {
+    property: 'energy_consumption',
+    table: 'energy_consumptions',
+    rows: energyConsumptionRowsToInsert
+  }, {
+    property: 'running',
+    table: 'runnings',
+    rows: runningRowsToInsert
+  }, {
+    property: 'device_type',
+    table: 'device_types',
+    rows: deviceTypeRowsToInsert
+  }, {
+    property: 'software_version',
+    table: 'software_version',
+    rows: softwareVersionRowsToInsert
+  }, {
+    property: 'software_build',
+    table: 'software_builds',
+    rows: softwareBuildRowsToInsert
+  }, {
+    property: 'serial_number_month',
+    table: 'serial_number_month',
+    rows: snMonthRowsToInsert
+  }, {
+    property: 'serial_number_year',
+    table: 'serial_number_year',
+    rows: snYearRowsToInsert
+  }, {
+    property: 'serial_number_unit',
+    table: 'serial_number_unit',
+    rows: snUnitRowsToInsert
+  }]
 
-    const groupNum = converter(message.body, 1, 4)
-
-    const sendingData = []
-
-    for (let N = 0; N < groupNum; N++) {
-      const group = {}
-      let isAddedDevice = false;
-
-      group.timestamp = converter(message.body, offset, 4) //5
-
-      if (commandNumber === 246) {
-        // check if device id is 1 or 0
-        if (converter(message.body, offset, 4) === 1) {
-          _machineId = 11
-        } else {
-          _machineId = machineId
-        }
-      }
-
-      group.values = []
-
-      const valCount = converter(message.body, offset, 4)  //9
-
-      for (let M = 0; M < valCount; M++) {
-        const val = {}
-        
-        // bytes for tag id is different depending on multi or single config
-        if (commandNumber === 245) {
-          val.id = converter(message.body, offset, 1)
-        } else if (commandNumber === 246) {
-          val.id = converter(message.body, offset, 2)
-        } else {
-          console.log('Invalid tag')
-
-          return
-        }
-
-        // plc link
-        if (val.id === 250) {
-          converter(message.body, offset, 1)  //14
-          converter(message.body, offset, 1) //15
-          converter(message.body, offset, 1) //16
-          const plcLinkValue = getTagValue(message.body, offset, 1, 'bool')
-
-          try {
-            await db.query('UPDATE devices SET plc_link = $1 WHERE serial_number = $2', [plcLinkValue, deviceId])
-          } catch (error) {
-            console.log('Updating device plc_link failed.')
-          }
-
-          return
-        }
-
-        val.status = converter(message.body, offset, 1)  //14
-
-        if (val.status !== 0) {
-          return
-        }
-
-        val.values = []
-        const numOfElements = converter(message.body, offset, 1) //15
-        const byteOfElement = converter(message.body, offset, 1) //16
-        let plctag
-
-        for (let i = 0; i < numOfElements; i++) {
-          plctag = json_machines[_machineId - 1].full_json.plctags.find((tag) => {
-            return tag.id === val.id
-          })
-
-          if (plctag) {
-            const { type } = plctag
-
-            val.values.push(getTagValue(message.body, offset, byteOfElement, type))
-          } else {
-            // printLongText(message.body)
-            console.log('Can\'t find tag', val.id, offset)
-
-            return
-          }
-        }
-
-        const queryValues = [deviceId, customerId, _machineId, val.id, group.timestamp, JSON.stringify(val.values)]
-
-        const newDate = new Date();
-        newDate.setTime(group.timestamp * 1000);
-
-        const _queryValues = [deviceId, customerId, _machineId, val.id, group.timestamp, newDate.toUTCString(), JSON.stringify(val.values)]
-
-        console.log('deviceId:', deviceId, 'timestamp:', group.timestamp, 'configuration:', _machineId, plctag.name, val.id, plctag.type, 'values:', JSON.stringify(val.values))
-
-        let tagObj = null
-
-        // check if the tag is utilization/energy_consumption/running
-        try {
-          tagObj = tags.find((tag) => parseInt(tag.configuration_id) === parseInt(_machineId) && parseInt(tag.tag_id) === parseInt(val.id))
-        } catch (error) {
-          console.log('Qeury from tags table failed.')
-
-          return
-        }
-
-        if (tagObj) {
-          tagObj.timestamp = group.timestamp
-          console.log(tagObj)
-
-          const insert = insertRows.find((insert) => insert.property === tagObj.tag_name)
-          if (insert) insert.rows.push(queryValues)
-        }
-
-        // check if the tag is alarms
-        try {
-          res = await db.query('SELECT * FROM alarm_types WHERE machine_id = $1 AND tag_id = $2', [_machineId, val.id])
-        } catch (error) {
-          console.log('Qeury from tags table failed.')
-
-          return
-        }
-
-        if (res && res.rows.length > 0) {
-          alarmsRowsToInsert.push(queryValues)
-          pusher.trigger('product.alarm.channel', 'alarm.created', {
-            deviceId: deviceId,
-            machineId: machineId,
-            tagId: val.id,
-            values: val.values,
-            timestamp: group.timestamp
-          })
-        }
-        
-        sendingData.push({
-          body: {
-            'deviceId': deviceId,
-            'machineId': _machineId,
-            'tagId': val.id,
-            'values': val.values
-          }
-        })
-
-        rowsToInsert.push(_queryValues)
-      }
-    }
-
-    try {
-      await senderClient.sendBatch(sendingData);
-    } catch (error) {
-      console.log('Sending failed.')
-      console.log(error)
-    }
-
-    try {
-      const promises = []
-
-      promises.push(db.query(pgFormat(buildInsert('device_data'), rowsToInsert)))
-      
-      insertRows.forEach((insert) => {
-        if (insert.rows.length)
-          promises.push(db.query(pgFormat(buildInsert(insert.table), insert.rows)))
-      })
-
-      if (alarmsRowsToInsert.length) {
-        promises.push(db.query(pgFormat(buildInsert('alarms'), alarmsRowsToInsert)))
-      }
-
-      await Promise.all(promises)
-    } catch (error) {
-      console.log('Inserting into database failed.')
-      console.log(error)
-    }
+  const commandNumber = converter(message.body, 0, 1)
+  console.log(commandNumber)
+  
+  if (commandNumber === 247) {
+    console.log(message.body)
   }
+  // if (commandNumber === 245 || commandNumber === 246) {
+  //   const groupNum = converter(message.body, 1, 4)
+  //   const sendingData = []
+
+  //   for (let N = 0; N < groupNum; N++) {
+  //     const group = {}
+  //     let isAddedDevice = false;
+
+  //     group.timestamp = converter(message.body, offset, 4) //5
+
+  //     if (commandNumber === 246) {
+  //       // check if device id is 1 or 0
+  //       if (converter(message.body, offset, 4) === 1) {
+  //         _machineId = 11
+  //       } else {
+  //         _machineId = machineId
+  //       }
+  //     }
+
+  //     group.values = []
+
+  //     const valCount = converter(message.body, offset, 4)  //9
+
+  //     for (let M = 0; M < valCount; M++) {
+  //       const val = {}
+        
+  //       // bytes for tag id is different depending on multi or single config
+  //       if (commandNumber === 245) {
+  //         val.id = converter(message.body, offset, 1)
+  //       } else if (commandNumber === 246) {
+  //         val.id = converter(message.body, offset, 2)
+  //       } else {
+  //         console.log('Invalid tag')
+
+  //         return
+  //       }
+
+  //       // plc link
+  //       if (val.id === 250) {
+  //         converter(message.body, offset, 1)  //14
+  //         converter(message.body, offset, 1) //15
+  //         converter(message.body, offset, 1) //16
+  //         const plcLinkValue = getTagValue(message.body, offset, 1, 'bool')
+
+  //         try {
+  //           await db.query('UPDATE devices SET plc_link = $1 WHERE serial_number = $2', [plcLinkValue, deviceId])
+  //         } catch (error) {
+  //           console.log('Updating device plc_link failed.')
+  //         }
+
+  //         return
+  //       }
+
+  //       val.status = converter(message.body, offset, 1)  //14
+
+  //       if (val.status !== 0) {
+  //         return
+  //       }
+
+  //       val.values = []
+  //       const numOfElements = converter(message.body, offset, 1) //15
+  //       const byteOfElement = converter(message.body, offset, 1) //16
+  //       let plctag
+
+  //       for (let i = 0; i < numOfElements; i++) {
+  //         plctag = json_machines[_machineId - 1].full_json.plctags.find((tag) => {
+  //           return tag.id === val.id
+  //         })
+
+  //         if (plctag) {
+  //           const { type } = plctag
+
+  //           val.values.push(getTagValue(message.body, offset, byteOfElement, type))
+  //         } else {
+  //           // printLongText(message.body)
+  //           console.log('Can\'t find tag', val.id, offset)
+
+  //           return
+  //         }
+  //       }
+
+  //       const queryValues = [deviceId, customerId, _machineId, val.id, group.timestamp, JSON.stringify(val.values)]
+
+  //       const newDate = new Date();
+  //       newDate.setTime(group.timestamp * 1000);
+
+  //       const _queryValues = [deviceId, customerId, _machineId, val.id, group.timestamp, newDate.toUTCString(), JSON.stringify(val.values)]
+
+  //       console.log('deviceId:', deviceId, 'timestamp:', group.timestamp, 'configuration:', _machineId, plctag.name, val.id, plctag.type, 'values:', JSON.stringify(val.values))
+
+  //       let tagObj = null
+
+  //       // check if the tag is utilization/energy_consumption/running
+  //       try {
+  //         tagObj = tags.find((tag) => parseInt(tag.configuration_id) === parseInt(_machineId) && parseInt(tag.tag_id) === parseInt(val.id))
+  //       } catch (error) {
+  //         console.log('Qeury from tags table failed.')
+
+  //         return
+  //       }
+
+  //       if (tagObj) {
+  //         tagObj.timestamp = group.timestamp
+  //         console.log(tagObj)
+
+  //         const insert = insertRows.find((insert) => insert.property === tagObj.tag_name)
+  //         if (insert) insert.rows.push(queryValues)
+  //       }
+
+  //       // check if the tag is alarms
+  //       try {
+  //         res = await db.query('SELECT * FROM alarm_types WHERE machine_id = $1 AND tag_id = $2', [_machineId, val.id])
+  //       } catch (error) {
+  //         console.log('Qeury from tags table failed.')
+
+  //         return
+  //       }
+
+  //       if (res && res.rows.length > 0) {
+  //         alarmsRowsToInsert.push(queryValues)
+  //         pusher.trigger('product.alarm.channel', 'alarm.created', {
+  //           deviceId: deviceId,
+  //           machineId: machineId,
+  //           tagId: val.id,
+  //           values: val.values,
+  //           timestamp: group.timestamp
+  //         })
+  //       }
+        
+  //       sendingData.push({
+  //         body: {
+  //           'deviceId': deviceId,
+  //           'machineId': _machineId,
+  //           'tagId': val.id,
+  //           'values': val.values
+  //         }
+  //       })
+
+  //       rowsToInsert.push(_queryValues)
+  //     }
+  //   }
+
+  //   try {
+  //     await senderClient.sendBatch(sendingData);
+  //   } catch (error) {
+  //     console.log('Sending failed.')
+  //     console.log(error)
+  //   }
+
+  //   try {
+  //     const promises = []
+
+  //     promises.push(db.query(pgFormat(buildInsert('device_data'), rowsToInsert)))
+      
+  //     insertRows.forEach((insert) => {
+  //       if (insert.rows.length)
+  //         promises.push(db.query(pgFormat(buildInsert(insert.table), insert.rows)))
+  //     })
+
+  //     if (alarmsRowsToInsert.length) {
+  //       promises.push(db.query(pgFormat(buildInsert('alarms'), alarmsRowsToInsert)))
+  //     }
+
+  //     await Promise.all(promises)
+  //   } catch (error) {
+  //     console.log('Inserting into database failed.')
+  //     console.log(error)
+  //   }
+  // }
 }
 
 async function getPlcConfigs() {
