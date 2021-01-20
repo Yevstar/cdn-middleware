@@ -1,5 +1,6 @@
 const { EventHubClient, EventData, EventPosition, OnMessage, OnError, MessagingError } = require('@azure/event-hubs')
 const { connectionString, senderConnectionString } = require('../config')
+const moment = require('moment')
 const pgFormat = require('pg-format')
 const Pusher = require('pusher')
 const { pusherAppId, pusherKey, pusherSecret, pusherCluster, pusherUseTLS } = require('../config')
@@ -29,6 +30,13 @@ function printLongText(longtext) {
     console.log(longtext.slice(offset, offset + 30))
     offset += 30
   }
+}
+
+function buildInsert(table) {
+  if (table === 'device_data' || table === 'alarms')
+    return `INSERT INTO ${table}(device_id, customer_id, machine_id, tag_id, timestamp, values, timedata, serial_number) VALUES %L`
+  else
+    return `INSERT INTO ${table}(device_id, customer_id, machine_id, tag_id, timestamp, values, serial_number) VALUES %L`
 }
 
 const printMessage = async function (message) {
@@ -71,13 +79,6 @@ const printMessage = async function (message) {
     return ret
   }
 
-  function buildInsert(table) {
-    if (table === 'device_data')
-      return `INSERT INTO ${table}(device_id, customer_id, machine_id, tag_id, timestamp, created_at, values) VALUES %L`
-    else
-      return `INSERT INTO ${table}(device_id, customer_id, machine_id, tag_id, timestamp, values) VALUES %L`
-  }
-
   let deviceId = message.annotations['iothub-connection-device-id']
   
   // if (deviceId === 'TESTACS157') deviceId = 1234567157   // BD Batch Blender
@@ -106,13 +107,11 @@ const printMessage = async function (message) {
 
   let customerId = 0
   let machineId
-  let _machineId
   let res = null
 
   try {
     res = await db.query('SELECT * FROM devices WHERE serial_number = $1', [deviceId])
   } catch (error) {
-    console.log('Device not found')
     console.log(error)
 
     return
@@ -121,7 +120,6 @@ const printMessage = async function (message) {
   if (res && res.rows.length > 0) {
     customerId = res.rows[0].company_id
     machineId = res.rows[0].machine_id
-    _machineId = machineId
 
     if (!machineId) {
       console.log(`Machine is not assigned to device ${deviceId}`)
@@ -136,7 +134,7 @@ const printMessage = async function (message) {
 
   if (!Buffer.isBuffer(message.body)) {
     if (message.body.cmd === 'register') {
-      
+
       console.log(message.body)
 
       res = await db.query('SELECT * FROM device_checkins WHERE device_id = $1', [deviceId])
@@ -216,16 +214,8 @@ const printMessage = async function (message) {
       const group = {}
 
       group.timestamp = converter(message.body, offset, 4) // group timestamp
-      converter(message.body, offset, 2) // device type - (03 f3) -> (1011)
-      converter(message.body, offset, 4) // device serial number
-      // if (commandNumber === 246) {
-      //   // check if device id is 1 or 0
-      //   if (converter(message.body, offset, 4) === 1) {
-      //     _machineId = 11
-      //   } else {
-      //     _machineId = machineId
-      //   }
-      // }
+      const deviceType = converter(message.body, offset, 2) // device type - (03 f3) -> (1011)
+      const deviceSerialNumber = converter(message.body, offset, 4) // device serial number
       
       group.values = []
 
@@ -233,17 +223,6 @@ const printMessage = async function (message) {
 
       for (let M = 0; M < valCount; M++) {
         const val = {}
-        
-        // bytes for tag id is different depending on multi or single config
-        // if (commandNumber === 245) {
-        //   val.id = converter(message.body, offset, 1)
-        // } else if (commandNumber === 246) {
-        //   val.id = converter(message.body, offset, 2)
-        // } else {
-        //   console.log('Invalid tag')
-
-        //   return
-        // }
 
         val.id = converter(message.body, offset, 2) // tag id
 
@@ -273,11 +252,11 @@ const printMessage = async function (message) {
         val.values = []
         const numOfElements = converter(message.body, offset, 1) // Array size
         const byteOfElement = converter(message.body, offset, 1) // Element size
-        
+
         let plctag
 
         for (let i = 0; i < numOfElements; i++) {
-          plctag = json_machines[_machineId - 1].full_json.plctags.find((tag) => {
+          plctag = json_machines[machineId - 1].full_json.plctags.find((tag) => {
             return tag.id === val.id
           })
 
@@ -292,21 +271,19 @@ const printMessage = async function (message) {
             return
           }
         }
+        
+        console.log('deviceId:', deviceId, 'timestamp:', moment(group.timestamp).format('LLL'), 'configuration:', machineId, plctag.name, val.id, plctag.type, 'values:', JSON.stringify(val.values))
 
-        const queryValues = [deviceId, customerId, _machineId, val.id, group.timestamp, JSON.stringify(val.values)]
-
-        const newDate = new Date();
-        newDate.setTime(group.timestamp * 1000);
-
-        const _queryValues = [deviceId, customerId, _machineId, val.id, group.timestamp, newDate.toUTCString(), JSON.stringify(val.values)]
-
-        console.log('deviceId:', deviceId, 'timestamp:', group.timestamp, 'configuration:', _machineId, plctag.name, val.id, plctag.type, 'values:', JSON.stringify(val.values))
+        // (device_id, customer_id, machine_id, tag_id, timestamp, values, timedata, serial_number)
+        // (device_id, customer_id, machine_id, tag_id, timestamp, values, serial_number)
+        const queryValuesWithTimeData = [deviceId, customerId, machineId, val.id, group.timestamp, JSON.stringify(val.values), moment(group.timestamp).format('LLL'), deviceSerialNumber]  // queryValues for device_data and alarms
+        const queryValuesWithoutTimeData = [deviceId, customerId, machineId, val.id, group.timestamp, JSON.stringify(val.values), deviceSerialNumber]  // queryValues for others
 
         let tagObj = null
 
         // check if the tag is utilization/energy_consumption/running
         try {
-          tagObj = tags.find((tag) => parseInt(tag.configuration_id) === parseInt(_machineId) && parseInt(tag.tag_id) === parseInt(val.id))
+          tagObj = tags.find((tag) => parseInt(tag.configuration_id) === parseInt(machineId) && parseInt(tag.tag_id) === parseInt(val.id))
         } catch (error) {
           console.log('Qeury from tags table failed.')
 
@@ -318,12 +295,12 @@ const printMessage = async function (message) {
           console.log(tagObj)
 
           const insert = insertRows.find((insert) => insert.property === tagObj.tag_name)
-          if (insert) insert.rows.push(queryValues)
+          if (insert) insert.rows.push(queryValuesWithoutTimeData)
         }
 
         // check if the tag is alarms
         try {
-          res = await db.query('SELECT * FROM alarm_types WHERE machine_id = $1 AND tag_id = $2', [_machineId, val.id])
+          res = await db.query('SELECT * FROM alarm_types WHERE machine_id = $1 AND tag_id = $2', [machineId, val.id])
         } catch (error) {
           console.log('Qeury from tags table failed.')
 
@@ -331,7 +308,7 @@ const printMessage = async function (message) {
         }
 
         if (res && res.rows.length > 0) {
-          alarmsRowsToInsert.push(queryValues)
+          alarmsRowsToInsert.push(queryValuesWithTimeData)
           pusher.trigger('product.alarm.channel', 'alarm.created', {
             deviceId: deviceId,
             machineId: machineId,
@@ -344,13 +321,13 @@ const printMessage = async function (message) {
         sendingData.push({
           body: {
             'deviceId': deviceId,
-            'machineId': _machineId,
+            'machineId': machineId,
             'tagId': val.id,
             'values': val.values
           }
         })
 
-        rowsToInsert.push(_queryValues)
+        rowsToInsert.push(queryValuesWithTimeData)
       }
     }
 
@@ -361,25 +338,25 @@ const printMessage = async function (message) {
       console.log(error)
     }
 
-    // try {
-    //   const promises = []
+    try {
+      const promises = []
 
-    //   promises.push(db.query(pgFormat(buildInsert('device_data'), rowsToInsert)))
+      promises.push(db.query(pgFormat(buildInsert('device_data'), rowsToInsert)))
       
-    //   insertRows.forEach((insert) => {
-    //     if (insert.rows.length)
-    //       promises.push(db.query(pgFormat(buildInsert(insert.table), insert.rows)))
-    //   })
+      insertRows.forEach((insert) => {
+        if (insert.rows.length)
+          promises.push(db.query(pgFormat(buildInsert(insert.table), insert.rows)))
+      })
 
-    //   if (alarmsRowsToInsert.length) {
-    //     promises.push(db.query(pgFormat(buildInsert('alarms'), alarmsRowsToInsert)))
-    //   }
+      if (alarmsRowsToInsert.length) {
+        promises.push(db.query(pgFormat(buildInsert('alarms'), alarmsRowsToInsert)))
+      }
 
-    //   await Promise.all(promises)
-    // } catch (error) {
-    //   console.log('Inserting into database failed.')
-    //   console.log(error)
-    // }
+      await Promise.all(promises)
+    } catch (error) {
+      console.log('Inserting into database failed.')
+      console.log(error)
+    }
   }
 }
 
