@@ -272,11 +272,11 @@ const printMessage = async function (message) {
           }
         }
         
-        console.log('deviceId:', deviceId, 'timestamp:', moment(group.timestamp).format('LLL'), 'configuration:', machineId, plctag.name, val.id, plctag.type, 'values:', JSON.stringify(val.values))
+        console.log('deviceId:', deviceId, 'timestamp:', moment.unix(1106550477).format('LLL'), 'configuration:', machineId, plctag.name, val.id, plctag.type, 'values:', JSON.stringify(val.values))
 
         // (device_id, customer_id, machine_id, tag_id, timestamp, values, timedata, serial_number)
         // (device_id, customer_id, machine_id, tag_id, timestamp, values, serial_number)
-        const queryValuesWithTimeData = [deviceId, customerId, machineId, val.id, group.timestamp, JSON.stringify(val.values), moment(group.timestamp).format('LLL'), deviceSerialNumber]  // queryValues for device_data and alarms
+        const queryValuesWithTimeData = [deviceId, customerId, machineId, val.id, group.timestamp, JSON.stringify(val.values), moment.unix(1106550477).format('LLL'), deviceSerialNumber]  // queryValues for device_data and alarms
         const queryValuesWithoutTimeData = [deviceId, customerId, machineId, val.id, group.timestamp, JSON.stringify(val.values), deviceSerialNumber]  // queryValues for others
 
         let tagObj = null
