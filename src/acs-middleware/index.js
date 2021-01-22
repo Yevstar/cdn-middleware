@@ -156,7 +156,7 @@ const printMessage = async function (message) {
       console.log(message.body)
 
       try {
-        if (message.body.status === 'OK') {
+        if (message.body.status === 'Ok') {
           res = await db.query('SELECT * FROM device_configurations WHERE teltonika_id = $1', [deviceId])
 
           if (res && res.rows.length > 0) {
