@@ -141,11 +141,11 @@ const printMessage = async function (message) {
           res = await db.query('SELECT * FROM device_configurations WHERE teltonika_id = $1', [deviceId])
 
           if (res && res.rows.length > 0) {
-            await db.query('UPDATE device_configurations SET plc_type = $1, plc_serial_number = $2, plc_status = $3, tcu_type = $4, tcu_serial_number = $5, tc_status = $6 body = $7 WHERE teltonika_id = $6', [message.body.plc.type, message.body.plc.serial_num, message.body.plc.link_state, message.body.tcu.type, message.body.tcu.serial_num, message.body.tcu.plc_link, message.body, deviceId])
+            await db.query('UPDATE device_configurations SET plc_type = $1, plc_serial_number = $2, plc_status = $3, tcu_type = $4, tcu_serial_number = $5, tc_status = $6 body = $7 WHERE teltonika_id = $8', [message.body.plc.type, message.body.plc.serial_num, message.body.plc.link_state, message.body.tcu.type, message.body.tcu.serial_num, message.body.tcu.plc_link, message.body, deviceId])
 
             console.log('device configuration updated')
           } else {
-            await db.query('INSERT INTO device_configurations(teltonika_id, plc_type, plc_serial_number, plc_status, tcu_type, tcu_serial_number, tcu_status, body) VALUES($1, $2, $3, $4, $5, $6) RETURNING *', [deviceId, message.body.plc.type, message.body.plc.serial_num, message.body.plc.plc_status, message.body.tcu.type, message.body.tcu.serial_num, message.body.tcu.plc_status, message.body])
+            await db.query('INSERT INTO device_configurations(teltonika_id, plc_type, plc_serial_number, plc_status, tcu_type, tcu_serial_number, tcu_status, body) VALUES($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *', [deviceId, message.body.plc.type, message.body.plc.serial_num, message.body.plc.plc_status, message.body.tcu.type, message.body.tcu.serial_num, message.body.tcu.plc_status, message.body])
 
             console.log('device configuration added')
           }
