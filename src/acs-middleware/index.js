@@ -394,56 +394,6 @@ async function getTags() {
 
 module.exports = {
   start: async function() {
-    const message = {
-      "body": {
-        "cmd": "status",
-        "ts": 1611259415,
-        "version": {
-          "sdk": "RUT9XX_R_GPL_00.06.07.3",
-          "acs": "5.0",
-          "rev": "7251c8ca"
-        },
-        "system_uptime": 622949,
-        "daemon_uptime": 3,
-        "status": "Ok",
-        "plc": {
-          "type": 1010,
-          "config_version": "4.4",
-          "link_state": 1,
-          "serial_num": 687931403
-        },
-        "tcu": {
-          "type": 5000,
-          "config_version": "4.4",
-          "link_state": 1,
-          "serial_num": 2129960697
-        }
-      },
-      "enqueuedTime": "2021-01-21T20:03:36.475Z"
-    }
-
-    const deviceId = 1
-    
-    try {
-      if (message.body.status === 'Ok') {
-        res = await db.query('SELECT * FROM device_configurations WHERE teltonika_id = $1', [deviceId])
-
-        if (res && res.rows.length > 0) {
-          await db.query('UPDATE device_configurations SET plc_type = $1, plc_serial_number = $2, plc_status = $3, tcu_type = $4, tcu_serial_number = $5, tc_status = $6 body = $7 WHERE teltonika_id = $8', [message.body.plc.type, message.body.plc.serial_num, message.body.plc.link_state, message.body.tcu.type, message.body.tcu.serial_num, message.body.tcu.link_state, message.body, deviceId])
-
-          console.log('device configuration updated')
-        } else {
-          await db.query('INSERT INTO device_configurations(teltonika_id, plc_type, plc_serial_number, plc_status, tcu_type, tcu_serial_number, tcu_status, body) VALUES($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *', [deviceId, message.body.plc.type, message.body.plc.serial_num, message.body.plc.link_state, message.body.tcu.type, message.body.tcu.serial_num, message.body.tcu.link_state, message.body])
-
-          console.log('device configuration added')
-        }
-      }
-    } catch (err) {
-      console.log(err)
-    }
-
-    return
-
     json_machines = await getPlcConfigs()
 
     if (!json_machines) {
