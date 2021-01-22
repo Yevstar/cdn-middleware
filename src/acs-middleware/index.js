@@ -155,10 +155,8 @@ const printMessage = async function (message) {
 
       console.log(message.body)
 
-      const deviceId = 1
-
       try {
-        if (message.body.status === 'Ok') {
+        if (message.body.status === 'OK') {
           res = await db.query('SELECT * FROM device_configurations WHERE teltonika_id = $1', [deviceId])
 
           if (res && res.rows.length > 0) {
@@ -291,7 +289,7 @@ const printMessage = async function (message) {
 
             val.values.push(getTagValue(message.body, offset, byteOfElement, type))
           } else {
-            // printLongText(message.body)
+            printLongText(message.body)
             console.log('Can\'t find tag', val.id, offset)
 
             return
