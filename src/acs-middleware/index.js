@@ -18,6 +18,7 @@ const pusher = new Pusher({
 
 let json_machines
 let tags
+let deviceRelations
 
 const printError = function (err) {
   console.log(err.message)
@@ -147,6 +148,31 @@ const printMessage = async function (message) {
         await db.query('INSERT INTO device_checkins(device_id, ts, sdk, acs_sha1, config_hash, status) VALUES($1, $2, $3, $4, $5, $6) RETURNING *', [deviceId, message.body.ts, message.body.sdk, message.body.acs_sha1, message.body.config_hash, message.body.status])
 
         console.log('checkin added')
+      }
+    }
+
+    if (message.body.cmd === 'status') {
+
+      console.log(message.body)
+
+      const deviceId = 1
+
+      try {
+        if (message.body.status === 'Ok') {
+          res = await db.query('SELECT * FROM device_configurations WHERE teltonika_id = $1', [deviceId])
+
+          if (res && res.rows.length > 0) {
+            await db.query('UPDATE device_configurations SET plc_type = $1, plc_serial_number = $2, tcu_type = $3, tcu_serial_number = $4, body = $5 WHERE teltonika_id = $6', [message.body.plc.type, message.body.plc.serial_num, message.body.tcu.type, message.body.tcu.serial_num, message.body, deviceId])
+
+            console.log('device configuration updated')
+          } else {
+            await db.query('INSERT INTO device_configurations(teltonika_id, plc_type, plc_serial_number, tcu_type, tcu_serial_number, body) VALUES($1, $2, $3, $4, $5, $6) RETURNING *', [deviceId, message.body.plc.type, message.body.plc.serial_num, message.body.tcu.type, message.body.tcu.serial_num, message.body])
+
+            console.log('device configuration added')
+          }
+        }
+      } catch (err) {
+        console.log(err)
       }
     }
 
