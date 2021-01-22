@@ -221,7 +221,9 @@ const printMessage = async function (message) {
       const deviceType = converter(message.body, offset, 2) // device type - (03 f3) -> (1011)
       const deviceSerialNumber = converter(message.body, offset, 4) // device serial number
       
-      machineId = json_machines.find((machine) => machine.device_type == deviceType).id
+      const machine = json_machines.find((machine) => machine.device_type == deviceType)
+
+      machineId = machine ? machine.id : 11
 
       group.values = []
 
