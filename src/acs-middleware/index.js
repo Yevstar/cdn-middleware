@@ -19,6 +19,7 @@ const pusher = new Pusher({
 let json_machines
 let tags
 let deviceRelations
+let machineId
 
 const printError = function (err) {
   console.log(err.message)
@@ -106,51 +107,30 @@ const printMessage = async function (message) {
   // if (deviceId === 'TESTACS157') deviceId = 8880000010  // HE Central Chiller
   // if (deviceId === 'TESTACS157') deviceId = 11234567157  // TrueTemp TCU
 
-  let customerId = 0
-  let machineId
-  let res = null
+  // try {
+  //   res = await db.query('SELECT * FROM devices WHERE serial_number = $1', [deviceId])
+  // } catch (error) {
+  //   console.log(error)
 
-  try {
-    res = await db.query('SELECT * FROM devices WHERE serial_number = $1', [deviceId])
-  } catch (error) {
-    console.log(error)
+  //   return
+  // }
 
-    return
-  }
+  // if (res && res.rows.length > 0) {
+  //   customerId = res.rows[0].company_id
+  //   machineId = res.rows[0].machine_id
 
-  if (res && res.rows.length > 0) {
-    customerId = res.rows[0].company_id
-    machineId = res.rows[0].machine_id
-
-    if (!machineId) {
-      console.log(`Machine is not assigned to device ${deviceId}`)
+  //   if (!machineId) {
+  //     console.log(`Machine is not assigned to device ${deviceId}`)
       
-      return
-    }
-  } else {
-    console.log('Can\'t find device -', deviceId, message.body)
+  //     return
+  //   }
+  // } else {
+  //   console.log('Can\'t find device -', deviceId, message.body)
 
-    return
-  }
+  //   return
+  // }
 
   if (!Buffer.isBuffer(message.body)) {
-    if (message.body.cmd === 'register') {
-
-      console.log(message.body)
-
-      res = await db.query('SELECT * FROM device_checkins WHERE device_id = $1', [deviceId])
-
-      if (res && res.rows.length > 0) {
-        await db.query('UPDATE device_checkins SET ts = $1, sdk = $2, acs_sha1 = $3, config_hash = $4, status = $5 WHERE device_id = $6', [message.body.ts, message.body.sdk, message.body.acs_sha1, message.body.config_hash, message.body.status, deviceId])
-
-        console.log('checkin updated')
-      } else {
-        await db.query('INSERT INTO device_checkins(device_id, ts, sdk, acs_sha1, config_hash, status) VALUES($1, $2, $3, $4, $5, $6) RETURNING *', [deviceId, message.body.ts, message.body.sdk, message.body.acs_sha1, message.body.config_hash, message.body.status])
-
-        console.log('checkin added')
-      }
-    }
-
     if (message.body.cmd === 'status') {
 
       console.log(message.body)
@@ -160,11 +140,11 @@ const printMessage = async function (message) {
           res = await db.query('SELECT * FROM device_configurations WHERE teltonika_id = $1', [deviceId])
 
           if (res && res.rows.length > 0) {
-            await db.query('UPDATE device_configurations SET plc_type = $1, plc_serial_number = $2, tcu_type = $3, tcu_serial_number = $4, body = $5 WHERE teltonika_id = $6', [message.body.plc.type, message.body.plc.serial_num, message.body.tcu.type, message.body.tcu.serial_num, message.body, deviceId])
+            await db.query('UPDATE device_configurations SET plc_type = $1, plc_serial_number = $2, plc_status = $3, tcu_type = $4, tcu_serial_number = $5, tc_status = $6 body = $7 WHERE teltonika_id = $6', [message.body.plc.type, message.body.plc.serial_num, message.body.plc.link_state, message.body.tcu.type, message.body.tcu.serial_num, message.body.tcu.plc_link, message.body, deviceId])
 
             console.log('device configuration updated')
           } else {
-            await db.query('INSERT INTO device_configurations(teltonika_id, plc_type, plc_serial_number, tcu_type, tcu_serial_number, body) VALUES($1, $2, $3, $4, $5, $6) RETURNING *', [deviceId, message.body.plc.type, message.body.plc.serial_num, message.body.tcu.type, message.body.tcu.serial_num, message.body])
+            await db.query('INSERT INTO device_configurations(teltonika_id, plc_type, plc_serial_number, plc_status, tcu_type, tcu_serial_number, tcu_status, body) VALUES($1, $2, $3, $4, $5, $6) RETURNING *', [deviceId, message.body.plc.type, message.body.plc.serial_num, message.body.plc.plc_status, message.body.tcu.type, message.body.tcu.serial_num, message.body.tcu.plc_status, message.body])
 
             console.log('device configuration added')
           }
@@ -241,6 +221,8 @@ const printMessage = async function (message) {
       const deviceType = converter(message.body, offset, 2) // device type - (03 f3) -> (1011)
       const deviceSerialNumber = converter(message.body, offset, 4) // device serial number
       
+      machineId = json_machines.find((machine) => machine.device_type == deviceType).id
+
       group.values = []
 
       const valCount = converter(message.body, offset, 4)  //9
@@ -290,7 +272,7 @@ const printMessage = async function (message) {
             val.values.push(getTagValue(message.body, offset, byteOfElement, type))
           } else {
             printLongText(message.body)
-            console.log('Can\'t find tag', val.id, offset)
+            console.log('Can\'t find tag', val.id, machineId)
 
             return
           }
