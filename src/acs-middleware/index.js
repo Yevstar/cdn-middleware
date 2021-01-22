@@ -20,6 +20,7 @@ let json_machines
 let tags
 let deviceRelations
 let machineId
+const customerId = 0
 
 const printError = function (err) {
   console.log(err.message)
