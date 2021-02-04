@@ -108,29 +108,6 @@ const printMessage = async function (message) {
   // if (deviceId === 'TESTACS157') deviceId = 8880000010  // HE Central Chiller
   // if (deviceId === 'TESTACS157') deviceId = 11234567157  // TrueTemp TCU
 
-  // try {
-  //   res = await db.query('SELECT * FROM devices WHERE serial_number = $1', [deviceId])
-  // } catch (error) {
-  //   console.log(error)
-
-  //   return
-  // }
-
-  // if (res && res.rows.length > 0) {
-  //   customerId = res.rows[0].company_id
-  //   machineId = res.rows[0].machine_id
-
-  //   if (!machineId) {
-  //     console.log(`Machine is not assigned to device ${deviceId}`)
-      
-  //     return
-  //   }
-  // } else {
-  //   console.log('Can\'t find device -', deviceId, message.body)
-
-  //   return
-  // }
-
   if (!Buffer.isBuffer(message.body)) {
     if (message.body.cmd === 'status') {
 
@@ -237,16 +214,16 @@ const printMessage = async function (message) {
 
         // plc link
         if (val.id === 250) {
-          converter(message.body, offset, 1)  //14
-          converter(message.body, offset, 1) //15
-          converter(message.body, offset, 1) //16
-          const plcLinkValue = getTagValue(message.body, offset, 1, 'bool')
+        //   converter(message.body, offset, 1)  //14
+        //   converter(message.body, offset, 1) //15
+        //   converter(message.body, offset, 1) //16
+        //   const plcLinkValue = getTagValue(message.body, offset, 1, 'bool')
 
-          try {
-            await db.query('UPDATE devices SET plc_link = $1 WHERE serial_number = $2', [plcLinkValue, deviceId])
-          } catch (error) {
-            console.log('Updating device plc_link failed.')
-          }
+        //   try {
+        //     await db.query('UPDATE devices SET plc_link = $1 WHERE serial_number = $2', [plcLinkValue, deviceId])
+        //   } catch (error) {
+        //     console.log('Updating device plc_link failed.')
+        //   }
 
           return
         }
@@ -283,8 +260,6 @@ const printMessage = async function (message) {
         
         console.log('deviceId:', deviceId, 'timestamp:', moment.unix(group.timestamp).format('LLL'), 'configuration:', machineId, plctag.name, val.id, plctag.type, 'values:', JSON.stringify(val.values))
 
-        // (device_id, customer_id, machine_id, tag_id, timestamp, values, timedata, serial_number)
-        // (device_id, customer_id, machine_id, tag_id, timestamp, values, serial_number)
         const queryValuesWithTimeData = [deviceId, customerId, machineId, val.id, group.timestamp, JSON.stringify(val.values), moment.unix(group.timestamp).format('LLL'), deviceSerialNumber]  // queryValues for device_data and alarms
         const queryValuesWithoutTimeData = [deviceId, customerId, machineId, val.id, group.timestamp, JSON.stringify(val.values), deviceSerialNumber]  // queryValues for others
 
@@ -301,7 +276,7 @@ const printMessage = async function (message) {
 
         if (tagObj) {
           tagObj.timestamp = group.timestamp
-          console.log(tagObj)
+          // console.log(tagObj)
 
           const insert = insertRows.find((insert) => insert.property === tagObj.tag_name)
           if (insert) insert.rows.push(queryValuesWithoutTimeData)
