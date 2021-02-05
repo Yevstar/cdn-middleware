@@ -186,7 +186,6 @@ const printMessage = async function (message) {
   }]
 
   const commandNumber = converter(message.body, 0, 1)
-  console.log(commandNumber)
 
   if (commandNumber === 247) {
     const groupNum = converter(message.body, 1, 4)
