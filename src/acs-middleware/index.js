@@ -264,7 +264,6 @@ const printMessage = async function (message) {
 
         let tagObj = null
 
-        // check if the tag is utilization/energy_consumption/running
         try {
           tagObj = tags.find((tag) => parseInt(tag.configuration_id) === parseInt(machineId) && parseInt(tag.tag_id) === parseInt(val.id))
         } catch (error) {
@@ -275,7 +274,6 @@ const printMessage = async function (message) {
 
         if (tagObj) {
           tagObj.timestamp = group.timestamp
-          // console.log(tagObj)
 
           const insert = insertRows.find((insert) => insert.property === tagObj.tag_name)
           if (insert) insert.rows.push(queryValuesWithoutTimeData)
