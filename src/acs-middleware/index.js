@@ -257,7 +257,7 @@ const printMessage = async function (message) {
           }
         }
         
-        console.log('teltonika-id:', deviceId, 'Plc Serial Number', deviceSerialNumber, 'tag id': val.id, 'timestamp:', moment.unix(group.timestamp).format('LLL'), 'configuration:', machineId, plctag.name, plctag.type, 'values:', JSON.stringify(val.values))
+        console.log('teltonika-id:', deviceId, 'Plc Serial Number', deviceSerialNumber, 'tag id:', val.id, 'timestamp:', moment.unix(group.timestamp).format('LLL'), 'configuration:', machineId, plctag.name, plctag.type, 'values:', JSON.stringify(val.values))
 
         const queryValuesWithTimeData = [deviceId, customerId, machineId, val.id, group.timestamp, JSON.stringify(val.values), moment.unix(group.timestamp).format('LLL'), deviceSerialNumber]  // queryValues for device_data and alarms
         const queryValuesWithoutTimeData = [deviceId, customerId, machineId, val.id, group.timestamp, JSON.stringify(val.values), deviceSerialNumber]  // queryValues for others
