@@ -190,7 +190,7 @@ const printMessage = async function (message) {
   console.log('command', commandNumber, 'deviceId', deviceId)
   
   if (deviceId == 1106550521) {
-    console.log(message.body)
+    console.log(printLongText(message.body))
   }
 
   if (commandNumber === 247) {
