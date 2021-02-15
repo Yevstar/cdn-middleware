@@ -188,6 +188,10 @@ const printMessage = async function (message) {
   const commandNumber = converter(message.body, 0, 1)
 
   console.log('command', commandNumber, 'deviceId', deviceId)
+  
+  if (deviceId == 1106550521) {
+    console.log(message.body)
+  }
 
   if (commandNumber === 247) {
     const groupNum = converter(message.body, 1, 4)
