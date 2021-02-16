@@ -83,36 +83,9 @@ const printMessage = async function (message) {
   }
 
   let deviceId = message.annotations['iothub-connection-device-id']
-  
-  // if (deviceId === 'TESTACS157') deviceId = 1234567157   // BD Batch Blender
-  // if (deviceId === 'TESTACS157') deviceId = 9990000004  // GH Gravimetric Extrusion Control Hopper
-  // if (deviceId === 'TESTACS157') deviceId = 9990000001  // Accumeter Ovation Continuous Blender
-  // if (deviceId === 'TESTACS157') deviceId = 9990000004  // GH-F Gravimetric Additive Feeder
-  // if (deviceId === 'TESTACS157') deviceId = 5234567157  // VTC Plus Conveying System
-  // if (deviceId === 'TESTACS157') deviceId = 6234567157  // NGX Dryer
-  // if (deviceId === 'TESTACS157') deviceId = 7234567157  // NGX Nomad Dryer
-  // if (deviceId === 'TESTACS157') deviceId = 8234567157  // T50 Central Granulator
-  // if (deviceId === 'TESTACS157') deviceId = 9234567157  // GP Portable Chiller
-  // if (deviceId === 'TESTACS157') deviceId = 10234567157  // HE Central Chiller
-  // if (deviceId === 'TESTACS157') deviceId = 11234567157  // TrueTemp TCU
-
-  if (deviceId === 'TESTACS157') deviceId = 8880000001   // BD Batch Blender
-  // if (deviceId === 'TESTACS157') deviceId = 8880000003  // GH Gravimetric Extrusion Control Hopper
-  // if (deviceId === 'TESTACS157') deviceId = 8880000002  // Accumeter Ovation Continuous Blender
-  // if (deviceId === 'TESTACS157') deviceId = 8880000004  // GH-F Gravimetric Additive Feeder
-  // if (deviceId === 'TESTACS157') deviceId = 8880000005  // VTC Plus Conveying System
-  // if (deviceId === 'TESTACS157') deviceId = 8880000006  // NGX Dryer
-  // if (deviceId === 'TESTACS157') deviceId = 8880000007  // NGX Nomad Dryer
-  // if (deviceId === 'TESTACS157') deviceId = 8880000008  // T50 Central Granulator
-  // if (deviceId === 'TESTACS157') deviceId = 8880000009  // GP Portable Chiller
-  // if (deviceId === 'TESTACS157') deviceId = 8880000010  // HE Central Chiller
-  // if (deviceId === 'TESTACS157') deviceId = 11234567157  // TrueTemp TCU
 
   if (!Buffer.isBuffer(message.body)) {
     if (message.body.cmd === 'status') {
-
-      console.log(message.body)
-
       try {
         if (message.body.status === 'Ok') {
           res = await db.query('SELECT * FROM device_configurations WHERE teltonika_id = $1', [deviceId])
@@ -188,10 +161,6 @@ const printMessage = async function (message) {
   const commandNumber = converter(message.body, 0, 1)
 
   console.log('command', commandNumber, 'deviceId', deviceId)
-  
-  if (deviceId == 1106550521) {
-    console.log(printLongText(message.body))
-  }
 
   if (commandNumber === 247) {
     const groupNum = converter(message.body, 1, 4)
@@ -297,13 +266,13 @@ const printMessage = async function (message) {
 
         if (res && res.rows.length > 0) {
           alarmsRowsToInsert.push(queryValuesWithTimeData)
-          pusher.trigger('product.alarm.channel', 'alarm.created', {
-            deviceId: deviceId,
-            machineId: machineId,
-            tagId: val.id,
-            values: val.values,
-            timestamp: group.timestamp
-          })
+          // pusher.trigger('product.alarm.channel', 'alarm.created', {
+          //   deviceId: deviceId,
+          //   machineId: machineId,
+          //   tagId: val.id,
+          //   values: val.values,
+          //   timestamp: group.timestamp
+          // })
         }
         
         sendingData.push({
