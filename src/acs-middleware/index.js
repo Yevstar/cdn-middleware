@@ -264,6 +264,7 @@ const printMessage = async function (message) {
           return
         }
 
+
         if (res && res.rows.length > 0) {
           alarmsRowsToInsert.push(queryValuesWithTimeData)
           // pusher.trigger('product.alarm.channel', 'alarm.created', {
