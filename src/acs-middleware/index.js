@@ -18,7 +18,6 @@ const pusher = new Pusher({
 
 let json_machines
 let tags
-let deviceRelations
 let machineId
 
 const printError = function (err) {
@@ -232,9 +231,9 @@ const printMessage = async function (message) {
 
         if (tagObj) {
           tagObj.timestamp = group.timestamp
-          // console.log(tagObj)
 
           const insert = insertRows.find((insert) => insert.property === tagObj.tag_name)
+          
           if (insert) insert.rows.push(queryValuesWithoutTimeData)
         }
 
@@ -246,7 +245,6 @@ const printMessage = async function (message) {
 
           return
         }
-
 
         if (res && res.rows.length > 0) {
           alarmsRowsToInsert.push(queryValuesWithTimeData)
