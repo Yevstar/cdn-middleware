@@ -97,6 +97,8 @@ const printMessage = async function (message) {
 
             console.log('device configuration added')
           }
+
+          console.log(message.body)
         }
       } catch (err) {
         console.log(err)
@@ -233,7 +235,7 @@ const printMessage = async function (message) {
           tagObj.timestamp = group.timestamp
 
           const insert = insertRows.find((insert) => insert.property === tagObj.tag_name)
-          
+
           if (insert) insert.rows.push(queryValuesWithoutTimeData)
         }
 
