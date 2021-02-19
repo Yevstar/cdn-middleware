@@ -20,7 +20,6 @@ let json_machines
 let tags
 let deviceRelations
 let machineId
-const customerId = 0
 
 const printError = function (err) {
   console.log(err.message)
@@ -37,9 +36,9 @@ function printLongText(longtext) {
 
 function buildInsert(table) {
   if (table === 'device_data' || table === 'alarms')
-    return `INSERT INTO ${table}(device_id, customer_id, machine_id, tag_id, timestamp, values, timedata, serial_number) VALUES %L`
+    return `INSERT INTO ${table}(device_id, machine_id, tag_id, timestamp, values, timedata, serial_number) VALUES %L`
   else
-    return `INSERT INTO ${table}(device_id, customer_id, machine_id, tag_id, timestamp, values, serial_number) VALUES %L`
+    return `INSERT INTO ${table}(device_id, machine_id, tag_id, timestamp, values, serial_number) VALUES %L`
 }
 
 const printMessage = async function (message) {
@@ -185,23 +184,6 @@ const printMessage = async function (message) {
         const val = {}
 
         val.id = converter(message.body, offset, 2) // tag id
-
-        // plc link
-        if (val.id === 250) {
-        //   converter(message.body, offset, 1)  //14
-        //   converter(message.body, offset, 1) //15
-        //   converter(message.body, offset, 1) //16
-        //   const plcLinkValue = getTagValue(message.body, offset, 1, 'bool')
-
-        //   try {
-        //     await db.query('UPDATE devices SET plc_link = $1 WHERE serial_number = $2', [plcLinkValue, deviceId])
-        //   } catch (error) {
-        //     console.log('Updating device plc_link failed.')
-        //   }
-
-          return
-        }
-
         val.status = converter(message.body, offset, 1)  // status
 
         // Proceed only if status == 0x00
@@ -232,13 +214,14 @@ const printMessage = async function (message) {
           }
         }
         
-        console.log('teltonika-id:', deviceId, 'Plc Serial Number', deviceSerialNumber, 'tag id:', val.id, 'timestamp:', moment.unix(group.timestamp).format('LLL'), 'configuration:', machineId, plctag.name, plctag.type, 'values:', JSON.stringify(val.values))
+        const date = new Date(group.timestamp)
 
-        const queryValuesWithTimeData = [deviceId, customerId, machineId, val.id, group.timestamp, JSON.stringify(val.values), moment.unix(group.timestamp).format('LLL'), deviceSerialNumber]  // queryValues for device_data and alarms
-        const queryValuesWithoutTimeData = [deviceId, customerId, machineId, val.id, group.timestamp, JSON.stringify(val.values), deviceSerialNumber]  // queryValues for others
+        console.log('teltonika-id:', deviceId, 'Plc Serial Number', deviceSerialNumber, 'tag id:', val.id, 'timestamp:', date.toISOString(), 'configuration:', machineId, plctag.name, plctag.type, 'values:', JSON.stringify(val.values))
+
+        const queryValuesWithTimeData = [deviceId, machineId, val.id, group.timestamp, JSON.stringify(val.values), date.toISOString(), deviceSerialNumber]  // queryValues for device_data and alarms
+        const queryValuesWithoutTimeData = [deviceId, machineId, val.id, group.timestamp, JSON.stringify(val.values), deviceSerialNumber]  // queryValues for others
 
         let tagObj = null
-
         try {
           tagObj = tags.find((tag) => parseInt(tag.configuration_id) === parseInt(machineId) && parseInt(tag.tag_id) === parseInt(val.id))
         } catch (error) {
@@ -368,7 +351,7 @@ module.exports = {
     senderClient = EventHubClient.createFromConnectionString(senderConnectionString, 'acsioteventhub1');
 
     let ehClient
-    
+
     EventHubClient.createFromIotHubConnectionString(connectionString).then((client) => {
       console.log('Successully created the EventHub Client from iothub connection string.')
       ehClient = client
