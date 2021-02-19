@@ -215,7 +215,7 @@ const printMessage = async function (message) {
           }
         }
         
-        const date = new Date(group.timestamp)
+        const date = new Date(group.timestamp * 1000)
 
         console.log('teltonika-id:', deviceId, 'Plc Serial Number', deviceSerialNumber, 'tag id:', val.id, 'timestamp:', date.toISOString(), 'configuration:', machineId, plctag.name, plctag.type, 'values:', JSON.stringify(val.values))
 
