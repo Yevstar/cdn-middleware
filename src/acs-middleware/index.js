@@ -45,16 +45,21 @@ const printMessage = async function (message) {
 
   function converter(buff, start, len) {
     const slicedBuff = buff.slice(start, start + len)
-    let ret
+    let ret = 0
 
-    if (len === 1) {
-      ret = slicedBuff.readUInt8()
-    } else if (len === 2) {
-      ret = slicedBuff.readUInt16BE()
-    } else if (len === 4) {
-      ret = slicedBuff.readUInt32BE()
+    try {
+      if (len === 1) {
+        ret = slicedBuff.readUInt8()
+      } else if (len === 2) {
+        ret = slicedBuff.readUInt16BE()
+      } else if (len === 4) {
+        ret = slicedBuff.readUInt32BE()
+      }
+      offset += len
+    } catch (err) {
+      console.log(err)
+      console.log(buff)
     }
-    offset += len
 
     return ret
   }
@@ -65,20 +70,16 @@ const printMessage = async function (message) {
 
     offset += len
 
-    try {
-      if (type === 'bool') {
-        return !!(slicedBuff.readUInt8())
-      } else if (type === 'int16') {
-        return slicedBuff.readInt16BE()
-      } else if (type === 'uint16') {
-        return slicedBuff.readUInt16BE()
-      } if (type === 'float') {
-        return slicedBuff.readFloatBE()
-      } else if (type === 'uint32') {
-        return slicedBuff.readUInt32BE()
-      }
-    } catch (err) {
-      console.log(buff, start, len)
+    if (type === 'bool') {
+      return !!(slicedBuff.readUInt8())
+    } else if (type === 'int16') {
+      return slicedBuff.readInt16BE()
+    } else if (type === 'uint16') {
+      return slicedBuff.readUInt16BE()
+    } if (type === 'float') {
+      return slicedBuff.readFloatBE()
+    } else if (type === 'uint32') {
+      return slicedBuff.readUInt32BE()
     }
     
     return ret
@@ -210,7 +211,6 @@ const printMessage = async function (message) {
           if (plctag) {
             const { type } = plctag
 
-            console.log('machineid', machineId, 'tagid', val.id)
             val.values.push(getTagValue(message.body, offset, byteOfElement, type))
           } else {
             printLongText(message.body)
