@@ -85,7 +85,8 @@ const printMessage = async function (message) {
       }
     } catch (error) {
       console.log(error)
-      printLongText(type, start, buff)
+      console.log(type, len, start)
+      printLongText(buff)
     }
 
     return ret
