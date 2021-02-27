@@ -83,7 +83,7 @@ const printMessage = async function (message) {
         return slicedBuff.readUInt32BE()
       }
     } catch (error) {
-      console.log(err)
+      console.log(error)
       printLongText(buff)
     }
 
