@@ -70,18 +70,23 @@ const printMessage = async function (message) {
 
     offset += len
 
-    if (type === 'bool') {
-      return !!(slicedBuff.readUInt8())
-    } else if (type === 'int16') {
-      return slicedBuff.readInt16BE()
-    } else if (type === 'uint16') {
-      return slicedBuff.readUInt16BE()
-    } if (type === 'float') {
-      return slicedBuff.readFloatBE()
-    } else if (type === 'uint32') {
-      return slicedBuff.readUInt32BE()
+    try {
+      if (type === 'bool') {
+        return !!(slicedBuff.readUInt8())
+      } else if (type === 'int16') {
+        return slicedBuff.readInt16BE()
+      } else if (type === 'uint16') {
+        return slicedBuff.readUInt16BE()
+      } if (type === 'float') {
+        return slicedBuff.readFloatBE()
+      } else if (type === 'uint32') {
+        return slicedBuff.readUInt32BE()
+      }
+    } catch (error) {
+      console.log(err)
+      printLongText(buff)
     }
-    
+
     return ret
   }
 
