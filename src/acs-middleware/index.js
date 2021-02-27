@@ -209,19 +209,23 @@ const printMessage = async function (message) {
         let plctag
 
         for (let i = 0; i < numOfElements; i++) {
-          plctag = json_machines[machineId - 1].full_json.plctags.find((tag) => {
-            return tag.id === val.id
-          })
-
-          if (plctag) {
-            const { type } = plctag
-
-            val.values.push(getTagValue(message.body, offset, byteOfElement, type))
+          if (val.id === 32769) {
+            val.values.push(getTagValue(message.body, offset, byteOfElement, 'bool'))
           } else {
-            printLongText(message.body)
-            console.log('Can\'t find tag', val.id, machineId)
+            plctag = json_machines[machineId - 1].full_json.plctags.find((tag) => {
+              return tag.id === val.id
+            })
 
-            return
+            if (plctag) {
+              const { type } = plctag
+
+              val.values.push(getTagValue(message.body, offset, byteOfElement, type))
+            } else {
+              printLongText(message.body)
+              console.log('Can\'t find tag', val.id, machineId)
+
+              return
+            }
           }
         }
         
