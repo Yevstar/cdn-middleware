@@ -34,7 +34,10 @@ function printLongText(longtext) {
 }
 
 function buildInsert(table) {
-  return `INSERT INTO ${table}(device_id, machine_id, tag_id, timestamp, values, timedata, serial_number) VALUES %L`
+  if (table === 'device_data' || table === 'alarms')
+    return `INSERT INTO ${table}(device_id, machine_id, tag_id, timestamp, values, timedata, serial_number) VALUES %L`
+  else
+    return `INSERT INTO ${table}(device_id, machine_id, tag_id, timestamp, values, serial_number) VALUES %L`
 }
 
 const printMessage = async function (message) {
@@ -238,7 +241,7 @@ const printMessage = async function (message) {
 
           const insert = insertRows.find((insert) => insert.property === tagObj.tag_name)
 
-          if (insert) insert.rows.push(queryValuesWithTimeData)
+          if (insert) insert.rows.push(queryValuesWithoutTimeData)
         }
 
         // check if the tag is alarms
