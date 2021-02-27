@@ -47,6 +47,8 @@ const printMessage = async function (message) {
     const slicedBuff = buff.slice(start, start + len)
     let ret = 0
 
+    offset += len
+
     try {
       if (len === 1) {
         ret = slicedBuff.readUInt8()
@@ -55,7 +57,6 @@ const printMessage = async function (message) {
       } else if (len === 4) {
         ret = slicedBuff.readUInt32BE()
       }
-      offset += len
     } catch (err) {
       console.log(err)
       console.log(buff)
@@ -84,7 +85,7 @@ const printMessage = async function (message) {
       }
     } catch (error) {
       console.log(error)
-      printLongText(buff)
+      printLongText(type, start, buff)
     }
 
     return ret
