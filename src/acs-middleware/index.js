@@ -363,7 +363,8 @@ module.exports = {
 
     tags = await getTags()
     
-    senderClient = EventHubClient.createFromConnectionString(senderConnectionString, 'acsioteventhub1');
+    // senderClient = EventHubClient.createFromConnectionString(senderConnectionString, 'acsioteventhub1');
+    senderClient = EventHubClient.createFromConnectionString(senderConnectionString);
 
     let ehClient
 
