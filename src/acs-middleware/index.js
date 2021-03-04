@@ -283,7 +283,6 @@ const printMessage = async function (message) {
             'values': val.values
           }
         })
-
         rowsToInsert.push(queryValuesWithTimeData)
       }
     }
