@@ -275,23 +275,8 @@ const printMessage = async function (message) {
           // })
         }
         
-        sendingData.push({
-          body: {
-            'deviceId': deviceId,
-            'machineId': machineId,
-            'tagId': val.id,
-            'values': val.values
-          }
-        })
         rowsToInsert.push(queryValuesWithTimeData)
       }
-    }
-
-    try {
-      await senderClient.sendBatch(sendingData);
-    } catch (error) {
-      console.log('Sending failed.')
-      console.log(error)
     }
 
     try {
