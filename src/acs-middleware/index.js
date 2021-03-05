@@ -6,8 +6,6 @@ const Pusher = require('pusher')
 const { pusherAppId, pusherKey, pusherSecret, pusherCluster, pusherUseTLS } = require('../config')
 const db = require('../helpers/db')
 
-let senderClient
-
 const pusher = new Pusher({
   appId: pusherAppId,
   key: pusherKey,
@@ -347,9 +345,6 @@ module.exports = {
     }
 
     tags = await getTags()
-    
-    // senderClient = EventHubClient.createFromConnectionString(senderConnectionString, 'acsioteventhub1');
-    senderClient = EventHubClient.createFromConnectionString(senderConnectionString);
 
     let ehClient
 
