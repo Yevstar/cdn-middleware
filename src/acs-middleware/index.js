@@ -58,7 +58,7 @@ const printMessage = async function (message) {
       }
     } catch (err) {
       logger.error(err)
-      logger.info(buff)
+      logger.err(buff)
     }
 
     return ret
@@ -83,7 +83,9 @@ const printMessage = async function (message) {
         return slicedBuff.readUInt32BE()
       }
     } catch (error) {
-      logger.error(type, len, start)
+      logger.error(type)
+      logger.error(len)
+      logger.error(start)
       logger.error(error)
       printLongText(buff)
     }
@@ -171,7 +173,8 @@ const printMessage = async function (message) {
 
   const commandNumber = converter(message.body, 0, 1)
 
-  logger.info('command', commandNumber, 'deviceId', deviceId)
+  logger.info('command', commandNumber)
+  logger.info('deviceId', deviceId)
 
   if (commandNumber === 247) {
     const groupNum = converter(message.body, 1, 4)
@@ -223,7 +226,8 @@ const printMessage = async function (message) {
               val.values.push(getTagValue(message.body, offset, byteOfElement, type))
             } else {
               printLongText(message.body)
-              logger.info('Can\'t find tag', val.id, machineId)
+              logger.info('Can\'t find tag', val.id)
+              logger.info('Can\'t find tag', machinId)
 
               return
             }
@@ -232,7 +236,13 @@ const printMessage = async function (message) {
         
         const date = new Date(group.timestamp * 1000)
 
-        logger.info('teltonika-id:', deviceId, 'Plc Serial Number', deviceSerialNumber, 'tag id:', val.id, 'timestamp:', date.toISOString(), 'configuration:', machineId, plctag.name, 'values:', JSON.stringify(val.values))
+        logger.info('teltonika-id:', deviceId)
+        logger.info('Plc Serial Number', deviceSerialNumber)
+        logger.info('tag id:', val.id)
+        logger.info('timestamp:', date.toISOString())
+        logger.info('configuration:', machineId)
+        logger.info('configuration:', plctag.name)
+        logger.info('values:', JSON.stringify(val.values))
 
         const queryValuesWithTimeData = [deviceId, machineId, val.id, group.timestamp, JSON.stringify(val.values), date.toISOString(), deviceSerialNumber]  // queryValues for device_data and alarms
         const queryValuesWithoutTimeData = [deviceId, machineId, val.id, group.timestamp, JSON.stringify(val.values), deviceSerialNumber]  // queryValues for others
