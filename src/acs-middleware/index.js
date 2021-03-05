@@ -7,8 +7,6 @@ const { pusherAppId, pusherKey, pusherSecret, pusherCluster, pusherUseTLS } = re
 const db = require('../helpers/db')
 const { logger } = require('../helpers/logger')
 
-let senderClient
-
 const pusher = new Pusher({
   appId: pusherAppId,
   key: pusherKey,
@@ -277,14 +275,6 @@ const printMessage = async function (message) {
           // })
         }
         
-        sendingData.push({
-          body: {
-            'deviceId': deviceId,
-            'machineId': machineId,
-            'tagId': val.id,
-            'values': val.values
-          }
-        })
         rowsToInsert.push(queryValuesWithTimeData)
       }
     }
@@ -362,7 +352,6 @@ module.exports = {
     }
 
     tags = await getTags()
-    
     senderClient = EventHubClient.createFromConnectionString(senderConnectionString, 'acsioteventhub1')
 
     let ehClient
