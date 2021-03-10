@@ -5,7 +5,6 @@ const pgFormat = require('pg-format')
 const Pusher = require('pusher')
 const { pusherAppId, pusherKey, pusherSecret, pusherCluster, pusherUseTLS } = require('../config')
 const db = require('../helpers/db')
-const { logger } = require('../helpers/logger')
 
 const pusher = new Pusher({
   appId: pusherAppId,
@@ -20,14 +19,14 @@ let tags
 let machineId
 
 const printError = function (err) {
-  logger.error({ error: err.message })
+  console.log(err.message)
 }
 
 function printLongText(longtext) {
   let offset = 0
 
   while (offset < longtext.length) {
-    logger.info(longtext.slice(offset, offset + 30))
+    console.log(longtext.slice(offset, offset + 30))
     offset += 30
   }
 }
@@ -57,8 +56,8 @@ const printMessage = async function (message) {
         ret = slicedBuff.readUInt32BE()
       }
     } catch (err) {
-      logger.error({ error: err })
-      logger.error({ buff })
+      console.log(err)
+      console.log(buff)
     }
 
     return ret
@@ -83,7 +82,8 @@ const printMessage = async function (message) {
         return slicedBuff.readUInt32BE()
       }
     } catch (error) {
-      logger.error({ type, len, start, error })
+      console.log(error)
+      console.log(type, len, start)
       printLongText(buff)
     }
 
@@ -101,17 +101,17 @@ const printMessage = async function (message) {
           if (res && res.rows.length > 0) {
             await db.query('UPDATE device_configurations SET plc_type = $1, plc_serial_number = $2, plc_status = $3, tcu_type = $4, tcu_serial_number = $5, tcu_status = $6, body = $7 WHERE teltonika_id = $8', [message.body.plc.type, message.body.plc.serial_num, message.body.plc.link_state, message.body.tcu.type, message.body.tcu.serial_num, message.body.tcu.link_state, message.body, deviceId])
 
-            logger.info('device configuration updated')
+            console.log('device configuration updated')
           } else {
             await db.query('INSERT INTO device_configurations(teltonika_id, plc_type, plc_serial_number, plc_status, tcu_type, tcu_serial_number, tcu_status, body) VALUES($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *', [deviceId, message.body.plc.type, message.body.plc.serial_num, message.body.plc.link_state, message.body.tcu.type, message.body.tcu.serial_num, message.body.tcu.link_state, message.body])
 
-            logger.info('device configuration added')
+            console.log('device configuration added')
           }
 
-          logger.info(message.body)
+          console.log(message.body)
         }
       } catch (err) {
-        logger.error({ error: err })
+        console.log(err)
       }
     }
 
@@ -170,8 +170,7 @@ const printMessage = async function (message) {
 
   const commandNumber = converter(message.body, 0, 1)
 
-  logger.info({ command: commandNumber })
-  logger.info({ deviceId: deviceId })
+  console.log('command', commandNumber, 'deviceId', deviceId)
 
   if (commandNumber === 247) {
     const groupNum = converter(message.body, 1, 4)
@@ -223,8 +222,7 @@ const printMessage = async function (message) {
               val.values.push(getTagValue(message.body, offset, byteOfElement, type))
             } else {
               printLongText(message.body)
-              logger.info({ 'Can\'t find tag': val.id })
-              logger.info({ 'Can\'t find tag': machineId })
+              console.log('Can\'t find tag', val.id, machineId)
 
               return
             }
@@ -233,15 +231,7 @@ const printMessage = async function (message) {
         
         const date = new Date(group.timestamp * 1000)
 
-        logger.info({
-          'teltonika-id': deviceId,
-          'Plc Serial Number': deviceSerialNumber,
-          'tag id': val.id,
-          'timestamp': date.toISOString(),
-          'configuration': machineId,
-          'tagname': plctag.name,
-          'values': JSON.stringify(val.values)
-        })
+        console.log('teltonika-id:', deviceId, 'Plc Serial Number', deviceSerialNumber, 'tag id:', val.id, 'timestamp:', date.toISOString(), 'configuration:', machineId, plctag.name, 'values:', JSON.stringify(val.values))
 
         const queryValuesWithTimeData = [deviceId, machineId, val.id, group.timestamp, JSON.stringify(val.values), date.toISOString(), deviceSerialNumber]  // queryValues for device_data and alarms
         const queryValuesWithoutTimeData = [deviceId, machineId, val.id, group.timestamp, JSON.stringify(val.values), deviceSerialNumber]  // queryValues for others
@@ -251,7 +241,7 @@ const printMessage = async function (message) {
         try { // eslint-disable-next-line
           tagObj = tags.find((tag) => parseInt(tag.configuration_id) === parseInt(machineId) && parseInt(tag.tag_id) === parseInt(val.id))
         } catch (error) {
-          logger.error({ error, msg: 'Qeury from tags table failed.' })
+          console.log('Qeury from tags table failed.')
 
           return
         }
@@ -268,7 +258,7 @@ const printMessage = async function (message) {
         try { // eslint-disable-next-line
           res = await db.query('SELECT * FROM alarm_types WHERE machine_id = $1 AND tag_id = $2', [machineId, val.id])
         } catch (error) {
-          logger.error({ error, msg: 'Qeury from tags table failed.' })
+          console.log('Qeury from tags table failed.')
 
           return
         }
@@ -289,12 +279,6 @@ const printMessage = async function (message) {
     }
 
     try {
-      await senderClient.sendBatch(sendingData)
-    } catch (error) {
-      logger.error({ error, msg: 'Sending failed.' })
-    }
-
-    try {
       const promises = []
 
       promises.push(db.query(pgFormat(buildInsert('device_data'), rowsToInsert)))
@@ -310,7 +294,8 @@ const printMessage = async function (message) {
 
       await Promise.all(promises)
     } catch (error) {
-      logger.error({ error, msg: 'Inserting into database failed.' })
+      console.log('Inserting into database failed.')
+      console.log(error)
     }
   }
 }
@@ -321,7 +306,7 @@ async function getPlcConfigs() {
 
     return res.rows
   } catch (error) {
-    logger.error(error)
+    console.log(error)
 
     return false
   }
@@ -332,7 +317,7 @@ async function getTags() {
 
     return res.rows
   } catch (error) {
-    logger.error(error)
+    console.log(error)
 
     return false
   }
@@ -343,7 +328,7 @@ module.exports = {
     json_machines = await getPlcConfigs()
 
     if (!json_machines) {
-      logger.info('Plc configs are not available.')
+      console.log('Plc configs are not available.')
     } else {
 
       const db_batch_blender_plctags = []
@@ -361,17 +346,16 @@ module.exports = {
     }
 
     tags = await getTags()
-    senderClient = EventHubClient.createFromConnectionString(senderConnectionString, 'acsioteventhub1')
 
     let ehClient
 
     EventHubClient.createFromIotHubConnectionString(connectionString).then((client) => {
-      logger.info('Successully created the EventHub Client from iothub connection string.')
+      console.log('Successully created the EventHub Client from iothub connection string.')
       ehClient = client
 
       return ehClient.getPartitionIds()
     }).then((ids) => {
-      logger.info({ 'The partition ids are: ': ids })
+      console.log('The partition ids are: ', ids)
 
       return ids.map((id) => {
         return ehClient.receive(id, printMessage, printError, { eventPosition: EventPosition.fromEnqueuedTime(Date.now()) })
