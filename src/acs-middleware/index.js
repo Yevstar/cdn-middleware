@@ -1,5 +1,5 @@
 const { EventHubConsumerClient, earliestEventPosition } = require('@azure/event-hubs')
-const { connectionString, senderConnectionString } = require('../config')
+const { consumerGroup, connectionString, eventHubName, senderString } = require('../config')
 const pgFormat = require('pg-format')
 const Pusher = require('pusher')
 const { pusherAppId, pusherKey, pusherSecret, pusherCluster, pusherUseTLS } = require('../config')
@@ -347,9 +347,9 @@ module.exports = {
     tags = await getTags()
 
     const client = new EventHubConsumerClient(
-      'acsiottimeseries',
-      'Endpoint=sb://iothub-ns-acsiothubp-5521693-6beb097891.servicebus.windows.net/;SharedAccessKeyName=iothubowner;SharedAccessKey=nXC/FXcVemxeOuZ/jN/XxeqscdeazqL8WJiy6PTkwTQ=;EntityPath=acsiothubprod',
-      'acsiothubprod'
+      consumerGroup,
+      connectionString,
+      eventHubName
     )
 
     const partitionIds = await client.getPartitionIds()
