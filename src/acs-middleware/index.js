@@ -1,6 +1,5 @@
-const { EventHubClient, EventData, EventPosition, OnMessage, OnError, MessagingError } = require('@azure/event-hubs')
+const { EventHubConsumerClient, earliestEventPosition } = require('@azure/event-hubs')
 const { connectionString, senderConnectionString } = require('../config')
-const moment = require('moment')
 const pgFormat = require('pg-format')
 const Pusher = require('pusher')
 const { pusherAppId, pusherKey, pusherSecret, pusherCluster, pusherUseTLS } = require('../config')
@@ -90,7 +89,7 @@ const printMessage = async function (message) {
     return ret
   }
 
-  const deviceId = message.annotations['iothub-connection-device-id']
+  const deviceId = message.systemProperties['iothub-connection-device-id']
 
   if (!Buffer.isBuffer(message.body)) {
     if (message.body.cmd === 'status') {
@@ -108,7 +107,7 @@ const printMessage = async function (message) {
             console.log('device configuration added')
           }
 
-          console.log(message.body)
+          console.log('teltonika-id:', deviceId, message.body)
         }
       } catch (err) {
         console.log(err)
@@ -347,19 +346,33 @@ module.exports = {
 
     tags = await getTags()
 
-    let ehClient
+    const client = new EventHubConsumerClient(
+      'acsiottimeseries',
+      'Endpoint=sb://iothub-ns-acsiothubp-5521693-6beb097891.servicebus.windows.net/;SharedAccessKeyName=iothubowner;SharedAccessKey=nXC/FXcVemxeOuZ/jN/XxeqscdeazqL8WJiy6PTkwTQ=;EntityPath=acsiothubprod',
+      'acsiothubprod'
+    )
 
-    EventHubClient.createFromIotHubConnectionString(connectionString).then((client) => {
-      console.log('Successully created the EventHub Client from iothub connection string.')
-      ehClient = client
+    const partitionIds = await client.getPartitionIds()
 
-      return ehClient.getPartitionIds()
-    }).then((ids) => {
-      console.log('The partition ids are: ', ids)
+    const subscriptionOptions = {
+      startPosition: earliestEventPosition
+    }
 
-      return ids.map((id) => {
-        return ehClient.receive(id, printMessage, printError, { eventPosition: EventPosition.fromEnqueuedTime(Date.now()) })
-      })
-    }).catch(printError)
+    partitionIds.map((id) => {
+      return client.subscribe(
+        id,
+        {
+          processEvents: async(events, context) => {
+            // event processing code goes here
+            printMessage(events[0])
+          },
+          processError: async(err, context) => {
+            // error reporting/handling code here
+            printError(err)
+          }
+        },
+        subscriptionOptions
+      )
+    })
   }
 }
