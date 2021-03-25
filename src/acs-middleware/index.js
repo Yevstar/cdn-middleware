@@ -1,5 +1,5 @@
 const { EventHubConsumerClient, EventHubProducerClient, earliestEventPosition } = require('@azure/event-hubs')
-const { iotConsumerGroup, connectionString, eventHubName, senderString } = require('../config')
+const { iotConsumerGroup, iotHubConnectionString, iotHubName, eventHubSenderConnectionString } = require('../config')
 const pgFormat = require('pg-format')
 const Pusher = require('pusher')
 const { pusherAppId, pusherKey, pusherSecret, pusherCluster, pusherUseTLS } = require('../config')
@@ -15,7 +15,7 @@ const pusher = new Pusher({
 
 // This is the connection string for EventHub. We use this to push processed data for data mining.
 const senderClient = new EventHubProducerClient(
-  senderString
+  eventHubSenderConnectionString
 )
 
 let json_machines
@@ -375,8 +375,8 @@ module.exports = {
     //This is the connection string for IoThub. We use this to receive data from the devices using dedicated consumer client.
     const client = new EventHubConsumerClient(
       iotConsumerGroup,
-      connectionString,
-      eventHubName
+      iotHubConnectionString,
+      iotHubName
     )
 
     const partitionIds = await client.getPartitionIds()
