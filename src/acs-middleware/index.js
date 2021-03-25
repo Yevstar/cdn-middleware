@@ -83,6 +83,8 @@ const printMessage = async function (message) {
     try {
       if (type === 'bool') {
         return !!(slicedBuff.readUInt8())
+      } else if (type === 'uint8') {
+        return slicedBuff.readUint8()
       } else if (type === 'int16') {
         return slicedBuff.readInt16BE()
       } else if (type === 'uint16') {
