@@ -44,9 +44,11 @@ function buildInsert(table) {
 const printMessage = async function (message) {
   let deviceId = 0
 
-  if (!message.systemProperties) {
+  if (!message) {
     // message has an error
     console.log('Received incorrect message format')
+
+    return
   } else {
     deviceId = message.systemProperties['iothub-connection-device-id']
   }
