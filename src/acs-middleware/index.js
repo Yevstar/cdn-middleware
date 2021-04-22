@@ -310,6 +310,25 @@ const printMessage = async function (message) {
             'values': val.values
           }
         })
+
+        try { // eslint-disable-next-line
+          const conditions = await db.query('SELECT * FROM thresholds where serial_number = $1 and tag_id = $2', [deviceId, val.id])
+          let value = 0
+    
+          conditions.rows.forEach((condition) => {
+            if (condition.bytes) {
+              value = (val.values[0] >> condition.offset) & condition.bytes
+            } else {
+              value = val.values[condition.offset] / condition.multipled_by
+            }
+    
+            if (compareThreshold(value, condition.operator, condition.value)) {
+              console.log('Threshold option matched ', condition)
+            }
+          })
+        } catch (error) {
+          console.log(error)
+        }
       }
     }
 
@@ -338,6 +357,25 @@ const printMessage = async function (message) {
       console.log('Inserting into database failed.')
       console.log(error)
     }
+  }
+}
+
+function compareThreshold(actualValue, operator, targetValue) {
+  switch (operator) {
+  case 'Equals':
+    return actualValue === Number(targetValue)
+  case 'Does not equal':
+    return actualValue !== Number(targetValue)
+  case 'Is greater than':
+    return actualValue > Number(targetValue)
+  case 'Is greater than or equal to':
+    return actualValue >= Number(targetValue)
+  case 'Is less than':
+    return actualValue < Number(targetValue)
+  case 'Is less than or equal to':
+    return actualValue <= Number(targetValue)
+  default:
+    return false
   }
 }
 
