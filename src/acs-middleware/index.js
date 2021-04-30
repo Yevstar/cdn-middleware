@@ -330,9 +330,40 @@ const printMessage = async function (message) {
               await db.query('UPDATE thresholds SET message_status = $1, last_triggered_at = $2 WHERE id = $3', [true, estTime.toISOString(), parseInt(condition.id)])
               console.log('Threshold updated')
             }
+
+            if (compareThreshold(value, condition.operator, condition.approaching)) {
+              console.log('Threshold approaching option matched ', condition)
+
+              const estTime = date - 60 * 60 * 4 * 1000
+
+              await db.query('UPDATE thresholds SET approaching_status = $1, approaching_triggered_time = $2 WHERE id = $3', [true, estTime.toISOString(), parseInt(condition.id)])
+              console.log('Threshold updated')
+            }
           }))
         } catch (error) {
           console.log(error)
+        }
+
+        // check if the BD blender hopper cleared
+        if (machineId === 1 && val.id === 15) {
+          try { //eslint-disable-next-line
+            const res = await db.query('SELECT * FROM device_data WHERE serial_number = $1 AND tag_id = $2 ORDER BY timestamp DESC limit 1', [deviceSerialNumber, 15])
+
+            lastInv = arrSum(JSON.parse(res.rows.values))
+            currentInv = arrSum(val.values)
+
+            if (currentInv < lastInv) { // eslint-disable-next-line
+              const cleared = await db.query('SELECT * FROM hopper_cleared_time WHERE serial_number = $1', [deviceSerialNumber])
+
+              if (cleared.rows.length === 0) {  // eslint-disable-next-line
+                await db.query('INSERT INTO hopper_cleared_time(serial_number, timestamp, last_cleared_time) VALUES ($1, $2, $3) RETURNING *', [deviceSerialNumber, date, date])
+              } else { // eslint-disable-next-line
+                await db.query('UPDATE hopper_cleared_time SET timestamp = $1, last_cleared_time = $2 WHERE serial_number = $3', [date, date, deviceSerialNumber])
+              }
+            }
+          } catch (error) {
+            console.log(error)
+          }
         }
       }
     }
@@ -383,6 +414,8 @@ function compareThreshold(actualValue, operator, targetValue) {
     return false
   }
 }
+
+const arrSum = (arr) => arr.reduce((a,b) => a + b, 0)
 
 async function getPlcConfigs() {
   try {
