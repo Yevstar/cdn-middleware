@@ -330,6 +330,15 @@ const printMessage = async function (message) {
               await db.query('UPDATE thresholds SET message_status = $1, last_triggered_at = $2 WHERE id = $3', [true, estTime.toISOString(), parseInt(condition.id)])
               console.log('Threshold updated')
             }
+
+            if (compareThreshold(value, condition.operator, condition.approaching)) {
+              console.log('Threshold approaching option matched ', condition)
+
+              const estTime = date - 60 * 60 * 4 * 1000
+
+              await db.query('UPDATE thresholds SET approaching_status = $1, approaching_triggered_time = $2 WHERE id = $3', [true, estTime.toISOString(), parseInt(condition.id)])
+              console.log('Threshold updated')
+            }
           }))
         } catch (error) {
           console.log(error)
