@@ -308,7 +308,7 @@ const printMessage = async function (message) {
 
               const offsetLength = previousValue.length > streamingValue.length ? previousValue.length : streamingValue.length
 
-              // store data in the alarm_status table
+              // check each bits of binary value and store data in the alarm_status table
               for (let i = 0; i < offsetLength; i ++) {
                 if (previousValue[i] === '1' && streamingValue[i] === '0') { // eslint-disable-next-line
                   await db.query('INSERT INTO alarm_status(device_id, tag_id, offset, timestamp, machine_id, is_activate) VALUES ($1, $2, $3, $4, $5, $6)', [deviceId, res.rows[0].tag_id, i, date, machineId, false])
@@ -319,7 +319,7 @@ const printMessage = async function (message) {
             } else {
               previousValue = JSON.parse(alarmData.rows[0].values)
               streamingValue = val.values
-              //store data in the alarm_status table
+              // store data in the alarm_status table
               for (let i = 0; i < previousValue.length; i ++) {
                 if (previousValue[i] === 1 && streamingValue[i] === 0) { // eslint-disable-next-line
                   await db.query('INSERT INTO alarm_status(device_id, tag_id, offset, timestamp, machine_id, is_activate) VALUES ($1, $2, $3, $4, $5, $6)', [deviceId, res.rows[0].tag_id, i, date, machineId, false])
@@ -365,8 +365,12 @@ const printMessage = async function (message) {
               console.log('Threshold option matched ', condition)
               const estTime = date - 60 * 60 * 4 * 1000
 
-              await db.query('UPDATE thresholds SET message_status = $1, last_triggered_at = $2 WHERE id = $3', [true, estTime.toISOString(), parseInt(condition.id)])
-              console.log('Threshold updated')
+              try {
+                await db.query('UPDATE thresholds SET message_status = $1, last_triggered_at = $2 WHERE id = $3', [true, estTime.toISOString(), parseInt(condition.id)])
+                console.log('Threshold updated')
+              } catch (error) {
+                console.log(error)
+              }
             }
 
             if (compareThreshold(value, condition.operator, condition.approaching)) {
@@ -374,8 +378,12 @@ const printMessage = async function (message) {
 
               const estTime = date - 60 * 60 * 4 * 1000
 
-              await db.query('UPDATE thresholds SET approaching_status = $1, approaching_triggered_time = $2 WHERE id = $3', [true, estTime.toISOString(), parseInt(condition.id)])
-              console.log('Threshold updated')
+              try {
+                await db.query('UPDATE thresholds SET approaching_status = $1, approaching_triggered_time = $2 WHERE id = $3', [true, estTime.toISOString(), parseInt(condition.id)])
+                console.log('Threshold updated')
+              } catch (error) {
+                console.log(error)
+              }
             }
           }))
         } catch (error) {
