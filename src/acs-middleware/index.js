@@ -295,37 +295,40 @@ const printMessage = async function (message) {
 
           // check if the alarm is activated or deactivated
           // eslint-disable-next-line
-          const alarmData = await db.query('SELECT * FROM alarms WHERE tag_id = $1 AND machine_id = $2 AND device_id = $3 ORDER BY timestamp LIMIT 1', [val.id, machineId, deviceId])
+          const alarmData = await db.query('SELECT * FROM alarms WHERE tag_id = $1 AND machine_id = $2 AND device_id = $3 ORDER BY timestamp DESC LIMIT 1', [val.id, machineId, deviceId])
           let previousValue = []
           let streamingValue = []
 
           if (alarmData && alarmData.rows.length > 0) {
             // check if the alarm type is a bit
             if (res.rows[0].bytes) {
+
               // convert values to binary number
-              previousValue = JSON.parse(alarmData.rows[0].values)[0].toString(2)
+              previousValue = JSON.parse(alarmData.rows[0].values)[0] ? JSON.parse(alarmData.rows[0].values)[0].toString(2) : '0'
               streamingValue = val.values[0].toString(2)
 
               const offsetLength = previousValue.length > streamingValue.length ? previousValue.length : streamingValue.length
 
               // check each bits of binary value and store data in the alarm_status table
               for (let i = 0; i < offsetLength; i ++) {
-                if (previousValue[i] === '1' && streamingValue[i] === '0') { // eslint-disable-next-line
+                if (previousValue[i] === '1' && streamingValue[i] !== '1') { // eslint-disable-next-line
                   await db.query('INSERT INTO alarm_status(device_id, tag_id, offset, timestamp, machine_id, is_activate) VALUES ($1, $2, $3, $4, $5, $6)', [deviceId, res.rows[0].tag_id, i, date, machineId, false])
-                } else if (previousValue[i] === 0 && streamingValue[i] === 1) { // eslint-disable-next-line
+                } else if (previousValue[i] !== '1' && streamingValue[i] === '1') { // eslint-disable-next-line
                   await db.query('INSERT INTO alarm_status(device_id, tag_id, offset, timestamp, machine_id, is_activate) VALUES ($1, $2, $3, $4, $5, $6)', [deviceId, res.rows[0].tag_id, i, date, machineId, true])
                 }
+                console.log('Alarm status has been updated')
               }
             } else {
               previousValue = JSON.parse(alarmData.rows[0].values)
               streamingValue = val.values
-              // store data in the alarm_status table
+              // if the alarm type is not bit type, define alarm status by checking every value in an array
               for (let i = 0; i < previousValue.length; i ++) {
-                if (previousValue[i] === 1 && streamingValue[i] === 0) { // eslint-disable-next-line
+                if (!!previousValue[i] && !streamingValue[i]) { // eslint-disable-next-line
                   await db.query('INSERT INTO alarm_status(device_id, tag_id, offset, timestamp, machine_id, is_activate) VALUES ($1, $2, $3, $4, $5, $6)', [deviceId, res.rows[0].tag_id, i, date, machineId, false])
-                } else if (previousValue[i] === 0 && streamingValue[i] === 1) { // eslint-disable-next-line
+                } else if (!previousValue[i] && !!streamingValue[i]) { // eslint-disable-next-line
                   await db.query('INSERT INTO alarm_status(device_id, tag_id, offset, timestamp, machine_id, is_activate) VALUES ($1, $2, $3, $4, $5, $6)', [deviceId, res.rows[0].tag_id, i, date, machineId, true])
                 }
+                console.log('Alarm status has been updated')
               }
             }
           }
@@ -353,6 +356,7 @@ const printMessage = async function (message) {
           const conditions = await db.query('SELECT * FROM thresholds WHERE serial_number = $1 AND tag_id = $2 AND message_status = $3', [deviceId, val.id, false])
           let value = 0
 
+          // check for the default threshold conditions
           // eslint-disable-next-line no-await-in-loop
           await Promise.all(conditions.rows.map(async (condition) => {
             if (condition.bytes) {
@@ -362,8 +366,8 @@ const printMessage = async function (message) {
             }
 
             if (compareThreshold(value, condition.operator, condition.value)) {
-              console.log('Threshold option matched ', condition)
-              const estTime = date - 60 * 60 * 4 * 1000
+              console.log('Threshold option matched ')
+              const estTime = new Date(date - 60 * 60 * 4 * 1000)
 
               try {
                 await db.query('UPDATE thresholds SET message_status = $1, last_triggered_at = $2 WHERE id = $3', [true, estTime.toISOString(), parseInt(condition.id)])
@@ -372,11 +376,24 @@ const printMessage = async function (message) {
                 console.log(error)
               }
             }
+          }))
+
+          // check for the approaching conditions
+          // eslint-disable-next-line
+          const approaching_conditions = await db.query('SELECT * FROM thresholds WHERE serial_number = $1 AND tag_id = $2 AND approaching_status = $3', [deviceId, val.id, false])
+
+          // eslint-disable-next-line no-await-in-loop
+          await Promise.all(approaching_conditions.rows.map(async (condition) => {
+            if (condition.bytes) {
+              value = (val.values[0] >> condition.offset) & condition.bytes
+            } else {
+              value = val.values[condition.offset] / condition.multipled_by
+            }
 
             if (compareThreshold(value, condition.operator, condition.approaching)) {
-              console.log('Threshold approaching option matched ', condition)
+              console.log('Threshold approaching option matched ')
 
-              const estTime = date - 60 * 60 * 4 * 1000
+              const estTime = new Date(date - 60 * 60 * 4 * 1000)
 
               try {
                 await db.query('UPDATE thresholds SET approaching_status = $1, approaching_triggered_time = $2 WHERE id = $3', [true, estTime.toISOString(), parseInt(condition.id)])
@@ -395,9 +412,11 @@ const printMessage = async function (message) {
           try { //eslint-disable-next-line
             const res = await db.query('SELECT * FROM device_data WHERE serial_number = $1 AND tag_id = $2 ORDER BY timestamp DESC limit 1', [deviceSerialNumber, 15])
 
+            // get total amount of last inventory and streaming inventory
             lastInv = arrSum(JSON.parse(res.rows.values))
             currentInv = arrSum(val.values)
 
+            // if the total amount of streaming inventory is bigger than last inventory, it means the hopper cleared
             if (currentInv < lastInv) { // eslint-disable-next-line
               const cleared = await db.query('SELECT * FROM hopper_cleared_time WHERE serial_number = $1', [deviceSerialNumber])
 
