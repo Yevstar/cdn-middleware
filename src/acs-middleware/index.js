@@ -296,7 +296,7 @@ const printMessage = async function (message) {
                 // if there is matching data with streaming data, compare that two values
                 if (alarmData && alarmData.rows.length > 0) {
                   // calculate value of datas
-                  const previousValue = parseInt(res.rows[j].bytes) ? (parseInt(alarmData.rows[0].values[0]) >> res.rows[j].offset) & res.rows[j].bytes : alarmData.rows[0].values[res.rows[j].offset]
+                  const previousValue = alarmData.rows[0].is_activate
                   const streamingValue = parseInt(res.rows[j].bytes) ? (parseInt(val.values[0]) >> res.rows[j].offset) & res.rows[j].bytes : val.values[res.rows[j].offset]
 
                   // compare the values and determine if streaming alarm is activate or deactivate
