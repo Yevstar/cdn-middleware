@@ -288,96 +288,6 @@ const printMessage = async function (message) {
 
           if (res && res.rows.length > 0) {
             alarmsRowsToInsert.push(queryValuesWithTimeData)
-            // check if the alarm is activated or deactivated
-            try { // eslint-disable-next-line
-              const alarmData = await db.query('SELECT * FROM alarms WHERE tag_id = $1 AND machine_id = $2 AND device_id = $3 ORDER BY timestamp DESC LIMIT 1', [val.id, machineId, deviceId])  
-
-              if (alarmData && alarmData.rows.length > 0) {
-                // check if the alarm type is a bit
-                if (parseInt(res.rows[0].bytes)) {
-
-                  // convert values to binary number
-                  const previousValue = parseInt(alarmData.rows[0].values[0]).toString(2)
-                  const streamingValue = parseInt(val.values[0]).toString(2)
-
-                  const offsetLength = previousValue.length > streamingValue.length ? previousValue.length : streamingValue.length
-
-                  // check each bits of binary value and store data in the alarm_status table
-                  for (let i = 0; i < offsetLength; i ++) {
-                    if (previousValue[i] === '1' && streamingValue[i] !== '1') {
-                      try { // eslint-disable-next-line
-                    await db.query('INSERT INTO alarm_status(device_id, tag_id, "offset", timestamp, machine_id, is_activate) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *', [deviceId, parseInt(res.rows[0].tag_id), i, date.getTime(), machineId, false])
-                        console.log('Alarm status has been updated')
-                      } catch (error) {
-                        console.log(error)
-                      }
-                    } else if (previousValue[i] !== '1' && streamingValue[i] === '1') {
-                      try { // eslint-disable-next-line
-                    await db.query('INSERT INTO alarm_status(device_id, tag_id, "offset", timestamp, machine_id, is_activate) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *', [deviceId, parseInt(res.rows[0].tag_id), i, date.getTime(), machineId, true])
-                        console.log('Alarm status has been updated')
-                      } catch (error) {
-                        console.log(error)
-                      }
-                    }
-                  }
-                } else {
-                  const previousValue = alarmData.rows[0].values
-                  const streamingValue = val.values
-
-                  // if the alarm type is not bit type, define alarm status by checking every value in an array
-                  for (let i = 0; i < previousValue.length; i ++) {
-                    if (!!previousValue[i] && !streamingValue[i]) {
-                      try { // eslint-disable-next-line
-                    await db.query('INSERT INTO alarm_status(device_id, tag_id, "offset", timestamp, machine_id, is_activate) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *', [deviceId, parseInt(res.rows[0].tag_id), i, date.getTime(), machineId, false])
-                        console.log('Alarm status has been updated')
-                      } catch (error) {
-                        console.log(error)
-                      }
-                    } else if (!previousValue[i] && !!streamingValue[i]) {
-                      try { // eslint-disable-next-line
-                    await db.query('INSERT INTO alarm_status(device_id, tag_id, "offset", timestamp, machine_id, is_activate) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *', [deviceId, parseInt(res.rows[0].tag_id), i, date.getTime(), machineId, true])
-                        console.log('Alarm status has been updated')
-                      } catch (error) {
-                        console.log(error)
-                      }
-                    }
-                  }
-                }
-              } else {
-                if (parseInt(res.rows[0].bytes)) {
-                  const streamingValue = parseInt(val.values[0]).toString(2)
-
-                  // check each bits of binary value and store data in the alarm_status table
-                  for (let i = 0; i < streamingValue.length; i ++) {
-                    if (streamingValue[i] === '1') {
-                      try { // eslint-disable-next-line
-                        await db.query('INSERT INTO alarm_status(device_id, tag_id, "offset", timestamp, machine_id, is_activate) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *', [deviceId, parseInt(res.rows[0].tag_id), i, date.getTime(), machineId, true])
-                        console.log('Alarm status has been updated')
-                      } catch (error) {
-                        console.log(error)
-                      }
-                    }
-                  }
-                } else {
-                  const streamingValue = val.values
-
-                  // if the alarm type is not bit type, define alarm status by checking every value in an array
-                  for (let i = 0; i < streamingValue.length; i ++) {
-                    if (streamingValue[i]) {
-                      try { // eslint-disable-next-line
-                        await db.query('INSERT INTO alarm_status(device_id, tag_id, "offset", timestamp, machine_id, is_activate) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *', [deviceId, parseInt(res.rows[0].tag_id), i, date.getTime(), machineId, true])
-                        console.log('Alarm status has been updated')
-                      } catch (error) {
-                        console.log(error)
-                      }
-                    }
-                  }
-                }
-              }
-            } catch (error) {
-              console.log(error)
-            }
-
           // pusher.trigger('product.alarm.channel', 'alarm.created', {
           //   deviceId: deviceId,
           //   machineId: machineId,
@@ -387,7 +297,7 @@ const printMessage = async function (message) {
           // })
           }
         } catch (error) {
-          console.log('Qeury from tags table failed.')
+          console.log('Query from tags table failed.')
 
           return
         }
@@ -507,6 +417,106 @@ const printMessage = async function (message) {
     } catch (error) {
       console.log('Inserting into database failed.')
       console.log(error)
+    }
+
+    if (res && res.rows.length > 0) {
+      // check if the alarm is activated or deactivated
+      try { // eslint-disable-next-line
+        const alarmData = await db.query('SELECT * FROM alarms WHERE tag_id = $1 AND machine_id = $2 AND device_id = $3 ORDER BY timestamp DESC LIMIT 1', [val.id, machineId, deviceId])  
+
+        if (alarmData && alarmData.rows.length > 0) {
+          // check if the alarm type is a bit
+          if (parseInt(res.rows[0].bytes)) {
+
+            // convert values to binary number
+            const previousValue = parseInt(alarmData.rows[0].values[0]).toString(2)
+            const streamingValue = parseInt(val.values[0]).toString(2)
+
+            const offsetLength = previousValue.length > streamingValue.length ? previousValue.length : streamingValue.length
+
+            // check each bits of binary value and store data in the alarm_status table
+            for (let i = 0; i < offsetLength; i ++) {
+              if (previousValue[i] === '1' && streamingValue[i] !== '1') {
+                try { // eslint-disable-next-line
+              await db.query('INSERT INTO alarm_status(device_id, tag_id, "offset", timestamp, machine_id, is_activate) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *', [deviceId, parseInt(res.rows[0].tag_id), i, date.getTime(), machineId, false])
+                  console.log('Alarm history has been updated')
+                } catch (error) {
+                  console.log(error)
+                }
+              } else if (previousValue[i] !== '1' && streamingValue[i] === '1') {
+                try { // eslint-disable-next-line
+              await db.query('INSERT INTO alarm_status(device_id, tag_id, "offset", timestamp, machine_id, is_activate) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *', [deviceId, parseInt(res.rows[0].tag_id), i, date.getTime(), machineId, true])
+                  console.log('Alarm history has been updated')
+                } catch (error) {
+                  console.log(error)
+                }
+              }
+            }
+          } else {
+            const previousValue = alarmData.rows[0].values
+            const streamingValue = val.values
+
+            // if the alarm type is not bit type, define alarm status by checking every value in an array
+            for (let i = 0; i < previousValue.length; i ++) {
+              if (!!previousValue[i] && !streamingValue[i]) {
+                try { // eslint-disable-next-line
+              await db.query('INSERT INTO alarm_status(device_id, tag_id, "offset", timestamp, machine_id, is_activate) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *', [deviceId, parseInt(res.rows[0].tag_id), i, date.getTime(), machineId, false])
+                  console.log('Alarm history has been updated')
+                } catch (error) {
+                  console.log(error)
+                }
+              } else if (!previousValue[i] && !!streamingValue[i]) {
+                try { // eslint-disable-next-line
+              await db.query('INSERT INTO alarm_status(device_id, tag_id, "offset", timestamp, machine_id, is_activate) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *', [deviceId, parseInt(res.rows[0].tag_id), i, date.getTime(), machineId, true])
+                  console.log('Alarm history has been updated')
+                } catch (error) {
+                  console.log(error)
+                }
+              }
+            }
+          }
+        } else {
+          if (parseInt(res.rows[0].bytes)) {
+            const streamingValue = parseInt(val.values[0]).toString(2)
+
+            // check each bits of binary value and store data in the alarm_status table
+            for (let i = 0; i < streamingValue.length; i ++) {
+              if (streamingValue[i] === '1') {
+                try { // eslint-disable-next-line
+                  await db.query('INSERT INTO alarm_status(device_id, tag_id, "offset", timestamp, machine_id, is_activate) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *', [deviceId, parseInt(res.rows[0].tag_id), i, date.getTime(), machineId, true])
+                  console.log('Alarm history has been updated')
+                } catch (error) {
+                  console.log(error)
+                }
+              }
+            }
+          } else {
+            const streamingValue = val.values
+
+            // if the alarm type is not bit type, define alarm status by checking every value in an array
+            for (let i = 0; i < streamingValue.length; i ++) {
+              if (streamingValue[i]) {
+                try { // eslint-disable-next-line
+                  await db.query('INSERT INTO alarm_status(device_id, tag_id, "offset", timestamp, machine_id, is_activate) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *', [deviceId, parseInt(res.rows[0].tag_id), i, date.getTime(), machineId, true])
+                  console.log('Alarm history has been updated')
+                } catch (error) {
+                  console.log(error)
+                }
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.log(error)
+      }
+
+    // pusher.trigger('product.alarm.channel', 'alarm.created', {
+    //   deviceId: deviceId,
+    //   machineId: machineId,
+    //   tagId: val.id,
+    //   values: val.values,
+    //   timestamp: group.timestamp
+    // })
     }
   }
 }
