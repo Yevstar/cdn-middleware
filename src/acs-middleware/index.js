@@ -296,37 +296,36 @@ const printMessage = async function (message) {
           // check if the alarm is activated or deactivated
           // eslint-disable-next-line
           const alarmData = await db.query('SELECT * FROM alarms WHERE tag_id = $1 AND machine_id = $2 AND device_id = $3 ORDER BY timestamp DESC LIMIT 1', [val.id, machineId, deviceId])
-          let previousValue = []
-          let streamingValue = []
 
           if (alarmData && alarmData.rows.length > 0) {
             // check if the alarm type is a bit
-            if (res.rows[0].bytes) {
+            if (parseInt(res.rows[0].bytes)) {
 
               // convert values to binary number
-              previousValue = JSON.parse(alarmData.rows[0].values)[0] ? JSON.parse(alarmData.rows[0].values)[0].toString(2) : '0'
-              streamingValue = val.values[0].toString(2)
+              const previousValue = parseInt(alarmData.rows[0].values[0]).toString(2)
+              const streamingValue = parseInt(val.values[0]).toString(2)
 
               const offsetLength = previousValue.length > streamingValue.length ? previousValue.length : streamingValue.length
 
               // check each bits of binary value and store data in the alarm_status table
               for (let i = 0; i < offsetLength; i ++) {
                 if (previousValue[i] === '1' && streamingValue[i] !== '1') { // eslint-disable-next-line
-                  await db.query('INSERT INTO alarm_status(device_id, tag_id, offset, timestamp, machine_id, is_activate) VALUES ($1, $2, $3, $4, $5, $6)', [deviceId, res.rows[0].tag_id, i, date, machineId, false])
+                  await db.query('INSERT INTO alarm_status(device_id, tag_id, offset, timestamp, machine_id, is_activate) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *', [deviceId, parseInt(res.rows[0].tag_id), i, date, machineId, false])
                 } else if (previousValue[i] !== '1' && streamingValue[i] === '1') { // eslint-disable-next-line
-                  await db.query('INSERT INTO alarm_status(device_id, tag_id, offset, timestamp, machine_id, is_activate) VALUES ($1, $2, $3, $4, $5, $6)', [deviceId, res.rows[0].tag_id, i, date, machineId, true])
+                  await db.query('INSERT INTO alarm_status(device_id, tag_id, offset, timestamp, machine_id, is_activate) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *', [deviceId, parseInt(res.rows[0].tag_id), i, date, machineId, true])
                 }
                 console.log('Alarm status has been updated')
               }
             } else {
-              previousValue = JSON.parse(alarmData.rows[0].values)
-              streamingValue = val.values
+              const previousValue = alarmData.rows[0].values
+              const streamingValue = val.values
+
               // if the alarm type is not bit type, define alarm status by checking every value in an array
               for (let i = 0; i < previousValue.length; i ++) {
                 if (!!previousValue[i] && !streamingValue[i]) { // eslint-disable-next-line
-                  await db.query('INSERT INTO alarm_status(device_id, tag_id, offset, timestamp, machine_id, is_activate) VALUES ($1, $2, $3, $4, $5, $6)', [deviceId, res.rows[0].tag_id, i, date, machineId, false])
+                  await db.query('INSERT INTO alarm_status(device_id, tag_id, offset, timestamp, machine_id, is_activate) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *', [deviceId, parseInt(res.rows[0].tag_id), i, date, machineId, false])
                 } else if (!previousValue[i] && !!streamingValue[i]) { // eslint-disable-next-line
-                  await db.query('INSERT INTO alarm_status(device_id, tag_id, offset, timestamp, machine_id, is_activate) VALUES ($1, $2, $3, $4, $5, $6)', [deviceId, res.rows[0].tag_id, i, date, machineId, true])
+                  await db.query('INSERT INTO alarm_status(device_id, tag_id, offset, timestamp, machine_id, is_activate) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *', [deviceId, parseInt(res.rows[0].tag_id), i, date, machineId, true])
                 }
                 console.log('Alarm status has been updated')
               }
