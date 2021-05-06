@@ -322,7 +322,7 @@ const printMessage = async function (message) {
                   const streamingValue = parseInt(res.rows[j].bytes) ? (parseInt(val.values[0]) >> res.rows[j].offset) & res.rows[j].bytes : val.values[res.rows[j].offset]
 
                   // check streaming value if the alarm is activate
-                  if (streamingValue[i]) {
+                  if (streamingValue) {
                     try { // eslint-disable-next-line
                       await db.query('INSERT INTO alarm_status(device_id, tag_id, "offset", timestamp, machine_id, is_activate) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *', [deviceId, parseInt(res.rows[j].tag_id), parseInt(res.rows[j].offset), date.getTime(), machineId, true])
                       console.log('Alarm history has been updated')
