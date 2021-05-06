@@ -306,14 +306,14 @@ const printMessage = async function (message) {
                   for (let i = 0; i < offsetLength; i ++) {
                     if (previousValue[i] === '1' && streamingValue[i] !== '1') {
                       try { // eslint-disable-next-line
-                    await db.query('INSERT INTO alarm_status(device_id, tag_id, "offset", timestamp, machine_id, is_activate) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *', [deviceId, parseInt(res.rows[0].tag_id), i, date, machineId, false])
+                    await db.query('INSERT INTO alarm_status(device_id, tag_id, "offset", timestamp, machine_id, is_activate) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *', [deviceId, parseInt(res.rows[0].tag_id), i, date.getTime(), machineId, false])
                         console.log('Alarm status has been updated')
                       } catch (error) {
                         console.log(error)
                       }
                     } else if (previousValue[i] !== '1' && streamingValue[i] === '1') {
                       try { // eslint-disable-next-line
-                    await db.query('INSERT INTO alarm_status(device_id, tag_id, "offset", timestamp, machine_id, is_activate) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *', [deviceId, parseInt(res.rows[0].tag_id), i, date, machineId, true])
+                    await db.query('INSERT INTO alarm_status(device_id, tag_id, "offset", timestamp, machine_id, is_activate) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *', [deviceId, parseInt(res.rows[0].tag_id), i, date.getTime(), machineId, true])
                         console.log('Alarm status has been updated')
                       } catch (error) {
                         console.log(error)
@@ -328,14 +328,14 @@ const printMessage = async function (message) {
                   for (let i = 0; i < previousValue.length; i ++) {
                     if (!!previousValue[i] && !streamingValue[i]) {
                       try { // eslint-disable-next-line
-                    await db.query('INSERT INTO alarm_status(device_id, tag_id, "offset", timestamp, machine_id, is_activate) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *', [deviceId, parseInt(res.rows[0].tag_id), i, date, machineId, false])
+                    await db.query('INSERT INTO alarm_status(device_id, tag_id, "offset", timestamp, machine_id, is_activate) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *', [deviceId, parseInt(res.rows[0].tag_id), i, date.getTime(), machineId, false])
                         console.log('Alarm status has been updated')
                       } catch (error) {
                         console.log(error)
                       }
                     } else if (!previousValue[i] && !!streamingValue[i]) {
                       try { // eslint-disable-next-line
-                    await db.query('INSERT INTO alarm_status(device_id, tag_id, "offset", timestamp, machine_id, is_activate) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *', [deviceId, parseInt(res.rows[0].tag_id), i, date, machineId, true])
+                    await db.query('INSERT INTO alarm_status(device_id, tag_id, "offset", timestamp, machine_id, is_activate) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *', [deviceId, parseInt(res.rows[0].tag_id), i, date.getTime(), machineId, true])
                         console.log('Alarm status has been updated')
                       } catch (error) {
                         console.log(error)
@@ -351,7 +351,7 @@ const printMessage = async function (message) {
                   for (let i = 0; i < streamingValue.length; i ++) {
                     if (streamingValue[i] === '1') {
                       try { // eslint-disable-next-line
-                        await db.query('INSERT INTO alarm_status(device_id, tag_id, "offset", timestamp, machine_id, is_activate) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *', [deviceId, parseInt(res.rows[0].tag_id), i, date, machineId, false])
+                        await db.query('INSERT INTO alarm_status(device_id, tag_id, "offset", timestamp, machine_id, is_activate) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *', [deviceId, parseInt(res.rows[0].tag_id), i, date.getTime(), machineId, true])
                         console.log('Alarm status has been updated')
                       } catch (error) {
                         console.log(error)
@@ -365,7 +365,7 @@ const printMessage = async function (message) {
                   for (let i = 0; i < streamingValue.length; i ++) {
                     if (streamingValue[i]) {
                       try { // eslint-disable-next-line
-                        await db.query('INSERT INTO alarm_status(device_id, tag_id, "offset", timestamp, machine_id, is_activate) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *', [deviceId, parseInt(res.rows[0].tag_id), i, date, machineId, false])
+                        await db.query('INSERT INTO alarm_status(device_id, tag_id, "offset", timestamp, machine_id, is_activate) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *', [deviceId, parseInt(res.rows[0].tag_id), i, date.getTime(), machineId, true])
                         console.log('Alarm status has been updated')
                       } catch (error) {
                         console.log(error)
