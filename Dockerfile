@@ -7,7 +7,7 @@ WORKDIR /var/www/html/acs-middleware
 # A wildcard is used to ensure both package.json AND package-lock.json are copied
 COPY package*.json ./
 
-RUN npm ci
+RUN npm install
 
 # Bundle app source
 COPY . .
