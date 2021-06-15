@@ -371,13 +371,22 @@ const printMessage = async function (message) {
           // check for the default threshold conditions
           // eslint-disable-next-line no-await-in-loop
           await Promise.all(conditions.rows.map(async (condition) => {
+            const isRunning = await db.query('SELECT * FROM runnings WHERE device_id = $1 ORDER BY timestamp DESC LIMIT 1', [deviceId])
+            let machineStatus = true
+
+            if (isRunning.rows.length === 0) {
+              machineStatus = false
+            } else {
+              machineStatus = !!isRunning.rows[0].values[0]
+            }
+            
             if (condition.bytes) {
               value = (val.values[0] >> condition.offset) & condition.bytes
             } else {
               value = val.values[condition.offset] / condition.multipled_by
             }
 
-            if (compareThreshold(value, condition.operator, condition.value)) {
+            if (compareThreshold(value, condition.operator, condition.value) && condition.is_running === machineStatus) {
               console.log('Threshold option matched ')
               const estTime = new Date(date - 60 * 60 * 4 * 1000)
 
@@ -396,13 +405,22 @@ const printMessage = async function (message) {
 
           // eslint-disable-next-line no-await-in-loop
           await Promise.all(approaching_conditions.rows.map(async (condition) => {
+            const isRunning = await db.query('SELECT * FROM runnings WHERE device_id = $1 ORDER BY timestamp DESC LIMIT 1', [deviceId])
+            let machineStatus = true
+
+            if (isRunning.rows.length === 0) {
+              machineStatus = false
+            } else {
+              machineStatus = !!isRunning.rows[0].values[0]
+            }
+
             if (condition.bytes) {
               value = (val.values[0] >> condition.offset) & condition.bytes
             } else {
               value = val.values[condition.offset] / condition.multipled_by
             }
 
-            if (compareThreshold(value, condition.operator, condition.approaching)) {
+            if (compareThreshold(value, condition.operator, condition.approaching) && condition.is_running === machineStatus) {
               console.log('Threshold approaching option matched ')
 
               const estTime = new Date(date - 60 * 60 * 4 * 1000)
