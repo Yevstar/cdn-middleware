@@ -419,12 +419,12 @@ const printMessage = async function (message) {
                 const deviceName = await db.query('SELECT * FROM devices WHERE device_id = $1 LIMIT 1', [condition.device_id])
                 let thresholdTagName = await db.query('SELECT * FROM alarm_types WHERE tag_id = $1 AND "offset" = $2 LIMIT 1', [condition.tag_id, condition.offset])
 
-                if (thresholdTagName.length === 0) {
+                if (thresholdTagName.rows.length === 0) {
                   thresholdTagName = await db.query('SELECT * FROM machine_tags WHERE tag_id = $1 AND "offset" = $2 LIMIT 1', [condition.tag_id, condition.offset])
                 }
 
-                if (user.length !== 0) {
-                  const emailContent = `Hello ${user.rows[0].name}, a threshold alert has been triggered. ${deviceName.length !== 0 ? deviceName.rows[0].name : '#'} has an alert of "${thresholdTagName.rows[0].name} ${condition.operator.toLowerCase()} ${condition.value}".`
+                if (user.rows.length !== 0) {
+                  const emailContent = `Hello ${user.rows[0].name}, a threshold alert has been triggered. ${deviceName.rows.length !== 0 ? deviceName.rows[0].name : '#'} has an alert of "${thresholdTagName.rows[0].name} ${condition.operator.toLowerCase()} ${condition.value}".`
 
                   sendThresholdNotifyEmail('sukh@machinecdn.com', sendGridFromEmail, 'Threshold alert has been triggered', emailContent, `<strong>${emailContent}</strong>`)
                 } else {
@@ -471,12 +471,12 @@ const printMessage = async function (message) {
                 const deviceName = await db.query('SELECT * FROM devices WHERE device_id = $1 LIMIT 1', [condition.device_id])
                 let thresholdTagName = await db.query('SELECT * FROM alarm_types WHERE tag_id = $1 AND "offset" = $2 LIMIT 1', [condition.tag_id, condition.offset])
 
-                if (thresholdTagName.length === 0) {
+                if (thresholdTagName.rows.length === 0) {
                   thresholdTagName = await db.query('SELECT * FROM machine_tags WHERE tag_id = $1 AND "offset" = $2 LIMIT 1', [condition.tag_id, condition.offset])
                 }
 
-                if (user.length !== 0) {
-                  const emailContent = `Hello ${user.rows[0].name}, a threshold alert has been triggered. ${deviceName.length !== 0 ? deviceName.rows[0].name : '#'} has an alert of "${thresholdTagName.rows[0].name} ${condition.operator.toLowerCase()} ${condition.value}".`
+                if (user.rows.length !== 0) {
+                  const emailContent = `Hello ${user.rows[0].name}, a threshold alert has been triggered. ${deviceName.rows.length !== 0 ? deviceName.rows[0].name : '#'} has an alert of "${thresholdTagName.rows[0].name} ${condition.operator.toLowerCase()} ${condition.value}".`
 
                   sendThresholdNotifyEmail('sukh@machinecdn.com', sendGridFromEmail, 'Threshold alert has been triggered', emailContent, `<strong>${emailContent}</strong>`)
                 } else {
