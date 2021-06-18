@@ -1,6 +1,10 @@
 const bodyParser = require('body-parser')
 const express = require('express')
 const cors = require('cors')
+const sgMail = require('@sendgrid/mail')
+const { sendGridApiKey } = require('./config')
+
+sgMail.setApiKey(sendGridApiKey)
 
 const acsMiddleware = require('./acs-middleware')
 const { port } = require('./config')
