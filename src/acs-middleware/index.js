@@ -1,9 +1,12 @@
 const { EventHubConsumerClient, EventHubProducerClient, earliestEventPosition } = require('@azure/event-hubs')
-const { iotConsumerGroup, iotHubConnectionString, iotHubName, eventHubSenderConnectionString } = require('../config')
+const { iotConsumerGroup, iotHubConnectionString, iotHubName, eventHubSenderConnectionString, sendGridApiKey, sendGridFromEmail } = require('../config')
 const pgFormat = require('pg-format')
 const Pusher = require('pusher')
 const { pusherAppId, pusherKey, pusherSecret, pusherCluster, pusherUseTLS } = require('../config')
 const db = require('../helpers/db')
+const sgMail = require('@sendgrid/mail')
+
+sgMail.setApiKey(sendGridApiKey)
 
 const pusher = new Pusher({
   appId: pusherAppId,
@@ -20,6 +23,25 @@ const senderClient = new EventHubProducerClient(
 
 let json_machines
 let tags
+
+const sendThresholdNotifyEmail = function (to, from, subject, text, html) {
+  const msg = {
+    to,
+    from,
+    subject,
+    text,
+    html
+  }
+
+  sgMail
+    .send(msg)
+    .then((response) => {
+      console.log('Email for threshold has been sent.')
+    })
+    .catch((error) => {
+      console.error(error)
+    })
+}
 
 const printError = function (err) {
   console.log(err.message)
@@ -392,6 +414,23 @@ const printMessage = async function (message) {
 
               try {
                 await db.query('UPDATE thresholds SET message_status = $1, last_triggered_at = $2 WHERE id = $3', [true, estTime.toISOString(), parseInt(condition.id)])
+
+                const user = await db.query('SELECT * FROM users WHERE id = $1 LIMIT 1', [condition.user_id])
+                const deviceName = await db.query('SELECT * FROM devices WHERE device_id = $1 LIMIT 1', [condition.device_id])
+                let thresholdTagName = await db.query('SELECT * FROM alarm_types WHERE tag_id = $1 AND "offset" = $2 LIMIT 1', [condition.tag_id, condition.offset])
+
+                if (thresholdTagName.length === 0) {
+                  thresholdTagName = await db.query('SELECT * FROM machine_tags WHERE tag_id = $1 AND "offset" = $2 LIMIT 1', [condition.tag_id, condition.offset])
+                }
+
+                if (user.length !== 0) {
+                  const emailContent = `Hello ${user.rows[0].name}, a threshold alert has been triggered. ${deviceName.length !== 0 ? deviceName.rows[0].name : '#'} has an alert of "${thresholdTagName.rows[0].name} ${condition.operator.toLowerCase()} ${condition.value}".`
+
+                  sendThresholdNotifyEmail('sukh@machinecdn.com', sendGridFromEmail, 'Threshold alert has been triggered', emailContent, `<strong>${emailContent}</strong>`)
+                } else {
+                  console.log('User does not exist for the threshold.')
+                }
+
                 console.log('Threshold updated')
               } catch (error) {
                 console.log(error)
@@ -427,6 +466,23 @@ const printMessage = async function (message) {
 
               try {
                 await db.query('UPDATE thresholds SET approaching_status = $1, approaching_triggered_time = $2 WHERE id = $3', [true, estTime.toISOString(), parseInt(condition.id)])
+                
+                const user = await db.query('SELECT * FROM users WHERE id = $1 LIMIT 1', [condition.user_id])
+                const deviceName = await db.query('SELECT * FROM devices WHERE device_id = $1 LIMIT 1', [condition.device_id])
+                let thresholdTagName = await db.query('SELECT * FROM alarm_types WHERE tag_id = $1 AND "offset" = $2 LIMIT 1', [condition.tag_id, condition.offset])
+
+                if (thresholdTagName.length === 0) {
+                  thresholdTagName = await db.query('SELECT * FROM machine_tags WHERE tag_id = $1 AND "offset" = $2 LIMIT 1', [condition.tag_id, condition.offset])
+                }
+
+                if (user.length !== 0) {
+                  const emailContent = `Hello ${user.rows[0].name}, a threshold alert has been triggered. ${deviceName.length !== 0 ? deviceName.rows[0].name : '#'} has an alert of "${thresholdTagName.rows[0].name} ${condition.operator.toLowerCase()} ${condition.value}".`
+
+                  sendThresholdNotifyEmail('sukh@machinecdn.com', sendGridFromEmail, 'Threshold alert has been triggered', emailContent, `<strong>${emailContent}</strong>`)
+                } else {
+                  console.log('User does not exist for the threshold.')
+                }
+
                 console.log('Threshold updated')
               } catch (error) {
                 console.log(error)

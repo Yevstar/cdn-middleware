@@ -19,5 +19,8 @@ module.exports = {
   pusherKey: process.env.PUSHER_KEY,
   pusherSecret: process.env.PUSHER_SECRET,
   pusherCluster: process.env.PUSHER_CLUSTER,
-  pusherUseTLS: process.env.PUSHER_TLS
+  pusherUseTLS: process.env.PUSHER_TLS,
+
+  sendGridApiKey: process.env.SENDGRID_API_KEY,
+  sendGridFromEmail: process.env.SENDGRID_FROM_EMAIL
 }
