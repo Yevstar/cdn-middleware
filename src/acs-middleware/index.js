@@ -1,10 +1,23 @@
 const { EventHubConsumerClient, EventHubProducerClient, earliestEventPosition } = require('@azure/event-hubs')
-const { iotConsumerGroup, iotHubConnectionString, iotHubName, eventHubSenderConnectionString, sendGridApiKey, sendGridFromEmail } = require('../config')
+const {
+  iotConsumerGroup,
+  iotHubConnectionString,
+  iotHubName,
+  eventHubSenderConnectionString,
+  sendGridApiKey,
+  sendGridFromEmail,
+  twilioAccountSID,
+  twilioAuthToken,
+  twilioFromNumber
+} = require('../config')
 const pgFormat = require('pg-format')
 const Pusher = require('pusher')
 const { pusherAppId, pusherKey, pusherSecret, pusherCluster, pusherUseTLS } = require('../config')
 const db = require('../helpers/db')
 const sgMail = require('@sendgrid/mail')
+const twilio = require('twilio')
+
+// const client = new twilio(twilioAccountSID, twilioAuthToken)
 
 sgMail.setApiKey(sendGridApiKey)
 
@@ -42,6 +55,10 @@ const sendThresholdNotifyEmail = function (to, from, subject, text, html) {
       console.error(error)
     })
 }
+
+// const sendThresholdNotifySMS = function (to, from, body) {
+
+// }
 
 const printError = function (err) {
   console.log(err.message)
@@ -494,12 +511,15 @@ const printMessage = async function (message) {
         }
 
         // check if the BD blender hopper cleared
-        if (machineId === 1 && val.id === 15) {
+        if (machineId === 1 && val.id === 14) {
           try { //eslint-disable-next-line
-            const res = await db.query('SELECT * FROM device_data WHERE serial_number = $1 AND tag_id = $2 ORDER BY timestamp DESC limit 1', [deviceSerialNumber, 15])
+            const res = await db.query('SELECT * FROM device_data WHERE serial_number = $1 AND tag_id = $2 ORDER BY timestamp DESC limit 1', [deviceSerialNumber, 14])
 
             // get total amount of last inventory and streaming inventory
-            lastInv = arrSum(JSON.parse(res.rows.values))
+            if (res.rows.length) {
+              lastInv = arrSum(JSON.parse(res.rows[0].values))
+            }
+
             currentInv = arrSum(val.values)
 
             // if the total amount of streaming inventory is bigger than last inventory, it means the hopper cleared

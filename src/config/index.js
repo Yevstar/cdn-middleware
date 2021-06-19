@@ -22,5 +22,9 @@ module.exports = {
   pusherUseTLS: process.env.PUSHER_TLS,
 
   sendGridApiKey: process.env.SENDGRID_API_KEY,
-  sendGridFromEmail: process.env.SENDGRID_FROM_EMAIL
+  sendGridFromEmail: process.env.SENDGRID_FROM_EMAIL,
+
+  twilioAuthToken: process.env.TWILIO_AUTH_TOKEN,
+  twilioAccountSID: process.env.TWILIO_ACCOUNT_SID,
+  twilioFromNumber: process.env.TWILIO_FROM_NUMBER
 }
