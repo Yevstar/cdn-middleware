@@ -21,7 +21,7 @@ const db = require('../helpers/db')
 const sgMail = require('@sendgrid/mail')
 const twilio = require('twilio')
 
-const client = new twilio(twilioAccountSID, twilioAuthToken)
+// const client = new twilio(twilioAccountSID, twilioAuthToken)
 
 sgMail.setApiKey(sendGridApiKey)
 
@@ -496,7 +496,7 @@ const printMessage = async function (message) {
                   if (condition.sms_checked) {
                     const userProfile = await db.query('SELECT * FROM profiles WHERE user_id = $1 LIMIT 1', [condition.user_id])
 
-                    sendThresholdNotifySMS(parseIntInternationalPhoneNumber(userProfile.rows[0].phone), twilioFromNumber, emailContent)
+                    // sendThresholdNotifySMS(parseIntInternationalPhoneNumber(userProfile.rows[0].phone), twilioFromNumber, emailContent)
                   }
                 } else {
                   console.log('User does not exist for the threshold.')
@@ -554,7 +554,7 @@ const printMessage = async function (message) {
                   if (condition.sms_checked) {
                     const userProfile = await db.query('SELECT * FROM profiles WHERE user_id = $1 LIMIT 1', [condition.user_id])
 
-                    sendThresholdNotifySMS(parseIntInternationalPhoneNumber(userProfile.rows[0].phone), twilioFromNumber, emailContent)
+                    // sendThresholdNotifySMS(parseIntInternationalPhoneNumber(userProfile.rows[0].phone), twilioFromNumber, emailContent)
                   }
                 } else {
                   console.log('User does not exist for the threshold.')
