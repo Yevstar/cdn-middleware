@@ -50,6 +50,8 @@ const sendThresholdNotifyEmail = function (to, from, subject, text, html) {
     html
   }
 
+  console.log(`Sending email for threshold to ${to}`)
+
   sgMail
     .send(msg)
     .then((response) => {
