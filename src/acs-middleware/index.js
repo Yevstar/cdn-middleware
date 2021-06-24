@@ -382,7 +382,7 @@ const printMessage = async function (message) {
                 const streamingValue = parseInt(res.rows[j].bytes) ? (parseInt(val.values[0]) >> res.rows[j].offset) & res.rows[j].bytes : val.values[res.rows[j].offset]
 
                 if (streamingValue) { // eslint-disable-next-line
-                  await db.query('INSERT INTO active_alarms(device_id, tag_id, "offset", timestamp, machine_id, serial_number) VALUES($1, $2, $3, $4, $5, $6) RETURNING *', [deviceId, res.rows[j].tag_id, res.rows[j].offset, date.getTime(), res.rows[j].machine_id, deviceSerialNumber])
+                  await db.query('INSERT INTO active_alarms(device_id, tag_id, "offset", timestamp, machine_id, serial_number, bytes) VALUES($1, $2, $3, $4, $5, $6, $7) RETURNING *', [deviceId, res.rows[j].tag_id, res.rows[j].offset, date.getTime(), res.rows[j].machine_id, deviceSerialNumber, res.rows[j].bytes])
                   console.log('Active alarms table has been updated.')
                 } else { // eslint-disable-next-line
                   await db.query('DELETE FROM active_alarms WHERE machine_id = $2 AND tag_id = $3 AND "offset" = $4 AND device_id = $5 AND serial_number = $6', [res.rows[j].machine_id, res.rows[j].tag_id, res.rows[j].offset, deviceId, deviceSerialNumber])
@@ -459,13 +459,6 @@ const printMessage = async function (message) {
           // eslint-disable-next-line no-await-in-loop
           await Promise.all(conditions.rows.map(async (condition) => {
             const isRunning = await db.query('SELECT * FROM runnings WHERE device_id = $1 ORDER BY timestamp DESC LIMIT 1', [deviceId])
-            let machineStatus = true
-
-            if (isRunning.rows.length === 0) {
-              machineStatus = false
-            } else {
-              machineStatus = !!isRunning.rows[0].values[0]
-            }
             
             if (condition.bytes) {
               value = (val.values[0] >> condition.offset) & condition.bytes
