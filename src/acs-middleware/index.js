@@ -49,6 +49,7 @@ const sendThresholdNotifyEmail = function (to, from, subject, text, html) {
 }
 
 const sendThresholdNotifySMS = function (to, from, body) {
+  console.log(`Sending SMS for threshold to ${to}`)
   client.messages.create({
     to,
     from,
@@ -468,7 +469,7 @@ const printMessage = async function (message) {
                   if (condition.sms_checked) {
                     const userProfile = await db.query('SELECT * FROM profiles WHERE user_id = $1 LIMIT 1', [condition.user_id])
 
-                    if (userProfile.length && userProfile.rows[0].phone) {
+                    if (userProfile.rows.length && userProfile.rows[0].phone) {
                       sendThresholdNotifySMS(parseToInternationalPhoneNumber(userProfile.rows[0].phone), twilioFromNumber, emailContent)
                     } else {
                       console.log('User profile does not exist or has no phone number.')
@@ -530,7 +531,7 @@ const printMessage = async function (message) {
                   if (condition.sms_checked) {
                     const userProfile = await db.query('SELECT * FROM profiles WHERE user_id = $1 LIMIT 1', [condition.user_id])
 
-                    if (userProfile.length && userProfile.rows[0].phone) {
+                    if (userProfile.rows.length && userProfile.rows[0].phone) {
                       sendThresholdNotifySMS(parseToInternationalPhoneNumber(userProfile.rows[0].phone), twilioFromNumber, emailContent)
                     } else {
                       console.log('User profile does not exist or has no phone number.')
