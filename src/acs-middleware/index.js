@@ -471,7 +471,7 @@ const printMessage = async function (message) {
               value = val.values[condition.offset] / condition.multipled_by
             }
 
-            if (compareThreshold(value, condition.operator, condition.value) && condition.is_running === machineStatus) {
+            if (compareThreshold(value, condition.operator, condition.value)) {
               console.log('Threshold option matched ')
               const estTime = new Date(date - 60 * 60 * 4 * 1000)
 
