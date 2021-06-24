@@ -8,16 +8,20 @@ const {
   sendGridFromEmail,
   twilioAccountSID,
   twilioAuthToken,
-  twilioFromNumber
+  twilioFromNumber,
+  pusherAppId,
+  pusherKey,
+  pusherSecret,
+  pusherCluster,
+  pusherUseTLS
 } = require('../config')
 const pgFormat = require('pg-format')
 const Pusher = require('pusher')
-const { pusherAppId, pusherKey, pusherSecret, pusherCluster, pusherUseTLS } = require('../config')
 const db = require('../helpers/db')
 const sgMail = require('@sendgrid/mail')
 const twilio = require('twilio')
 
-// const client = new twilio(twilioAccountSID, twilioAuthToken)
+const client = new twilio(twilioAccountSID, twilioAuthToken)
 
 sgMail.setApiKey(sendGridApiKey)
 
@@ -56,9 +60,17 @@ const sendThresholdNotifyEmail = function (to, from, subject, text, html) {
     })
 }
 
-// const sendThresholdNotifySMS = function (to, from, body) {
-
-// }
+const sendThresholdNotifySMS = function (to, from, body) {
+  client.messages.create({
+    to,
+    from,
+    body
+  }).then((res) => {
+    console.log('SMS has been sent.')
+  }).catch((err) => {
+    console.log('error ', err)
+  })
+}
 
 const printError = function (err) {
   console.log(err.message)
@@ -326,6 +338,35 @@ const printMessage = async function (message) {
           if (insert) insert.rows.push(queryValuesWithoutTimeData)
         }
 
+        // check if the blender hopper is cleared
+        if (Number(machineId) === 1 && val.id === 14 ) {
+          try { //eslint-disable-next-line
+            const res = await db.query('SELECT * FROM device_data WHERE serial_number = $1 AND tag_id = $2 ORDER BY timestamp DESC limit 1', [deviceSerialNumber, 14])
+            let lastInv = 0
+
+            // get total amount of last inventory and streaming inventory
+            if (res.rows.length) {
+              lastInv = arrSum(res.rows[0].values)
+            }
+
+            const currentInv = arrSum(val.values)
+
+            // if the total amount of streaming inventory is bigger than last inventory, it means the hopper cleared
+            if (currentInv < lastInv) { // eslint-disable-next-line
+              const cleared = await db.query('SELECT * FROM hopper_cleared_time WHERE serial_number = $1 AND device_id = $2', [deviceSerialNumber, deviceId])
+
+              if (cleared.rows.length === 0) {  // eslint-disable-next-line
+                await db.query('INSERT INTO hopper_cleared_time(serial_number, timestamp, last_cleared_time, device_id, machine_id) VALUES ($1, $2, $3, $4, $5) RETURNING *', [deviceSerialNumber, group.timestamp, date, deviceId, machineId])
+              } else { // eslint-disable-next-line
+                await db.query('UPDATE hopper_cleared_time SET timestamp = $1, last_cleared_time = $2 WHERE serial_number = $3 AND device_id = $4', [group.timestamp, date, deviceSerialNumber, deviceId])
+              }
+              console.log('Hopper cleared time table has been updated.')
+            }
+          } catch (error) {
+            console.log(error)
+          }
+        }
+
         // check if the tag is alarms
         try { // eslint-disable-next-line
           res = await db.query('SELECT * FROM alarm_types WHERE machine_id = $1 AND tag_id = $2', [machineId, val.id])
@@ -336,24 +377,32 @@ const printMessage = async function (message) {
             for (let j = 0; j < res.rows.length; j ++) {
               try { // eslint-disable-next-line
                 const alarmData = await db.query('SELECT * FROM alarm_status WHERE tag_id = $1 AND machine_id = $2 AND device_id = $3 AND "offset" = $4 ORDER BY timestamp DESC LIMIT 1', [val.id, machineId, deviceId, res.rows[j].offset])
+                const streamingValue = parseInt(res.rows[j].bytes) ? (parseInt(val.values[0]) >> res.rows[j].offset) & res.rows[j].bytes : val.values[res.rows[j].offset]
+
+                if (streamingValue) { // eslint-disable-next-line
+                  await db.query('INSERT INTO active_alarms(device_id, tag_id, "offset", timestamp, machine_id, serial_number) VALUES($1, $2, $3, $4, $5, $6) RETURNING *', [deviceId, res.rows[j].tag_id, res.rows[j].offset, date.getTime(), res.rows[j].machine_id, deviceSerialNumber])
+                  console.log('Active alarms table has been updated.')
+                } else { // eslint-disable-next-line
+                  await db.query('DELETE FROM active_alarms WHERE machine_id = $2 AND tag_id = $3 AND "offset" = $4 AND device_id = $5 AND serial_number = $6', [res.rows[j].machine_id, res.rows[j].tag_id, res.rows[j].offset, deviceId, deviceSerialNumber])
+                  console.log('Active alarms table has been updated.')
+                }
 
                 // if there is matching data with streaming data, compare that two values
                 if (alarmData && alarmData.rows.length > 0) {
                   // calculate value of datas
                   const previousValue = alarmData.rows[0].is_activate
-                  const streamingValue = parseInt(res.rows[j].bytes) ? (parseInt(val.values[0]) >> res.rows[j].offset) & res.rows[j].bytes : val.values[res.rows[j].offset]
 
                   // compare the values and determine if streaming alarm is activate or deactivate
                   if (previousValue && !streamingValue) {
                     try { // eslint-disable-next-line
-                        await db.query('INSERT INTO alarm_status(device_id, tag_id, "offset", timestamp, machine_id, is_activate) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *', [deviceId, parseInt(res.rows[j].tag_id), res.rows[j].offset, date.getTime(), machineId, false])
+                      await db.query('INSERT INTO alarm_status(device_id, tag_id, "offset", timestamp, machine_id, is_activate) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *', [deviceId, parseInt(res.rows[j].tag_id), res.rows[j].offset, date.getTime(), machineId, false])
                       console.log('Alarm history has been updated')
                     } catch (error) {
                       console.log(error)
                     }
                   } else if (!previousValue && streamingValue) {
                     try { // eslint-disable-next-line
-                        await db.query('INSERT INTO alarm_status(device_id, tag_id, "offset", timestamp, machine_id, is_activate) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *', [deviceId, parseInt(res.rows[j].tag_id), res.rows[j].offset, date.getTime(), machineId, true])
+                      await db.query('INSERT INTO alarm_status(device_id, tag_id, "offset", timestamp, machine_id, is_activate) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *', [deviceId, parseInt(res.rows[j].tag_id), res.rows[j].offset, date.getTime(), machineId, true])
                       console.log('Alarm history has been updated')
                     } catch (error) {
                       console.log(error)
@@ -362,9 +411,6 @@ const printMessage = async function (message) {
                 }
                 // if there is no matching data, save active alarms in the table
                 else {
-                  // get value of streaming data
-                  const streamingValue = parseInt(res.rows[j].bytes) ? (parseInt(val.values[0]) >> res.rows[j].offset) & res.rows[j].bytes : val.values[res.rows[j].offset]
-
                   // check streaming value if the alarm is activate
                   if (streamingValue) {
                     try { // eslint-disable-next-line
@@ -443,7 +489,13 @@ const printMessage = async function (message) {
                 if (user.rows.length !== 0) {
                   const emailContent = `Hello ${user.rows[0].name}, a threshold alert has been triggered. ${deviceName.rows.length !== 0 ? deviceName.rows[0].name : '#'} has an alert of "${thresholdTagName.rows[0].name} ${condition.operator.toLowerCase()} ${condition.value}".`
 
-                  sendThresholdNotifyEmail('sukh@machinecdn.com', sendGridFromEmail, 'Threshold alert has been triggered', emailContent, `<strong>${emailContent}</strong>`)
+                  if (condition.email_checked)
+                    sendThresholdNotifyEmail(user.rows[0].email, sendGridFromEmail, 'Threshold alert has been triggered', emailContent, `<strong>${emailContent}</strong>`)
+                  if (condition.sms_checked) {
+                    const userProfile = await db.query('SELECT * FROM profiles WHERE user_id = $1 LIMIT 1', [condition.user_id])
+
+                    sendThresholdNotifySMS(parseIntInternationalPhoneNumber(userProfile.rows[0].phone), twilioFromNumber, emailContent)
+                  }
                 } else {
                   console.log('User does not exist for the threshold.')
                 }
@@ -495,7 +547,13 @@ const printMessage = async function (message) {
                 if (user.rows.length !== 0) {
                   const emailContent = `Hello ${user.rows[0].name}, a threshold alert has been triggered. ${deviceName.rows.length !== 0 ? deviceName.rows[0].name : '#'} has an alert of "${thresholdTagName.rows[0].name} ${condition.operator.toLowerCase()} ${condition.value}".`
 
-                  sendThresholdNotifyEmail('sukh@machinecdn.com', sendGridFromEmail, 'Threshold alert has been triggered', emailContent, `<strong>${emailContent}</strong>`)
+                  if (condition.email_checked)
+                    sendThresholdNotifyEmail(user.rows[0].email, sendGridFromEmail, 'Threshold alert has been triggered', emailContent, `<strong>${emailContent}</strong>`)
+                  if (condition.sms_checked) {
+                    const userProfile = await db.query('SELECT * FROM profiles WHERE user_id = $1 LIMIT 1', [condition.user_id])
+
+                    sendThresholdNotifySMS(parseIntInternationalPhoneNumber(userProfile.rows[0].phone), twilioFromNumber, emailContent)
+                  }
                 } else {
                   console.log('User does not exist for the threshold.')
                 }
@@ -508,33 +566,6 @@ const printMessage = async function (message) {
           }))
         } catch (error) {
           console.log(error)
-        }
-
-        // check if the BD blender hopper cleared
-        if (machineId === 1 && val.id === 14) {
-          try { //eslint-disable-next-line
-            const res = await db.query('SELECT * FROM device_data WHERE serial_number = $1 AND tag_id = $2 ORDER BY timestamp DESC limit 1', [deviceSerialNumber, 14])
-
-            // get total amount of last inventory and streaming inventory
-            if (res.rows.length) {
-              lastInv = arrSum(JSON.parse(res.rows[0].values))
-            }
-
-            currentInv = arrSum(val.values)
-
-            // if the total amount of streaming inventory is bigger than last inventory, it means the hopper cleared
-            if (currentInv < lastInv) { // eslint-disable-next-line
-              const cleared = await db.query('SELECT * FROM hopper_cleared_time WHERE serial_number = $1', [deviceSerialNumber])
-
-              if (cleared.rows.length === 0) {  // eslint-disable-next-line
-                await db.query('INSERT INTO hopper_cleared_time(serial_number, timestamp, last_cleared_time) VALUES ($1, $2, $3) RETURNING *', [deviceSerialNumber, date, date])
-              } else { // eslint-disable-next-line
-                await db.query('UPDATE hopper_cleared_time SET timestamp = $1, last_cleared_time = $2 WHERE serial_number = $3', [date, date, deviceSerialNumber])
-              }
-            }
-          } catch (error) {
-            console.log(error)
-          }
         }
       }
     }
@@ -587,6 +618,10 @@ function compareThreshold(actualValue, operator, targetValue) {
 }
 
 const arrSum = (arr) => arr.reduce((a,b) => a + b, 0)
+
+const parseIntInternationalPhoneNumber = (phoneNumber) => {
+  return `+1 ${phoneNumber.replace(/-/g, ' ')}`
+}
 
 async function getPlcConfigs() {
   try {
