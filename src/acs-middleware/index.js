@@ -8,30 +8,16 @@ const {
   sendGridFromEmail,
   twilioAccountSID,
   twilioAuthToken,
-  twilioFromNumber,
-  pusherAppId,
-  pusherKey,
-  pusherSecret,
-  pusherCluster,
-  pusherUseTLS
+  twilioFromNumber
 } = require('../config')
 const pgFormat = require('pg-format')
-const Pusher = require('pusher')
 const db = require('../helpers/db')
 const sgMail = require('@sendgrid/mail')
 const twilio = require('twilio')
 
-// const client = new twilio(twilioAccountSID, twilioAuthToken)
+const client = new twilio(twilioAccountSID, twilioAuthToken)
 
 sgMail.setApiKey(sendGridApiKey)
-
-const pusher = new Pusher({
-  appId: pusherAppId,
-  key: pusherKey,
-  secret: pusherSecret,
-  cluster: pusherCluster,
-  useTLS: pusherUseTLS
-})
 
 // This is the connection string for EventHub. We use this to push processed data for data mining.
 const senderClient = new EventHubProducerClient(
@@ -68,7 +54,7 @@ const sendThresholdNotifySMS = function (to, from, body) {
     from,
     body
   }).then((res) => {
-    console.log('SMS has been sent.')
+    console.log('SMS for threshold has been sent.')
   }).catch((err) => {
     console.log('error ', err)
   })
@@ -427,13 +413,6 @@ const printMessage = async function (message) {
                 console.log(error)
               }
             }
-          // pusher.trigger('product.alarm.channel', 'alarm.created', {
-          //   deviceId: deviceId,
-          //   machineId: machineId,
-          //   tagId: val.id,
-          //   values: val.values,
-          //   timestamp: group.timestamp
-          // })
           }
         } catch (error) {
           console.log('Query from tags table failed.')
@@ -489,7 +468,11 @@ const printMessage = async function (message) {
                   if (condition.sms_checked) {
                     const userProfile = await db.query('SELECT * FROM profiles WHERE user_id = $1 LIMIT 1', [condition.user_id])
 
-                    // sendThresholdNotifySMS(parseIntInternationalPhoneNumber(userProfile.rows[0].phone), twilioFromNumber, emailContent)
+                    if (userProfile.length && userProfile.rows[0].phone) {
+                      sendThresholdNotifySMS(parseToInternationalPhoneNumber(userProfile.rows[0].phone), twilioFromNumber, emailContent)
+                    } else {
+                      console.log('User profile does not exist or has no phone number.')
+                    }
                   }
                 } else {
                   console.log('User does not exist for the threshold.')
@@ -547,7 +530,11 @@ const printMessage = async function (message) {
                   if (condition.sms_checked) {
                     const userProfile = await db.query('SELECT * FROM profiles WHERE user_id = $1 LIMIT 1', [condition.user_id])
 
-                    // sendThresholdNotifySMS(parseIntInternationalPhoneNumber(userProfile.rows[0].phone), twilioFromNumber, emailContent)
+                    if (userProfile.length && userProfile.rows[0].phone) {
+                      sendThresholdNotifySMS(parseToInternationalPhoneNumber(userProfile.rows[0].phone), twilioFromNumber, emailContent)
+                    } else {
+                      console.log('User profile does not exist or has no phone number.')
+                    }
                   }
                 } else {
                   console.log('User does not exist for the threshold.')
@@ -614,7 +601,7 @@ function compareThreshold(actualValue, operator, targetValue) {
 
 const arrSum = (arr) => arr.reduce((a,b) => a + b, 0)
 
-const parseIntInternationalPhoneNumber = (phoneNumber) => {
+const parseToInternationalPhoneNumber = (phoneNumber) => {
   return `+1 ${phoneNumber.replace(/-/g, ' ')}`
 }
 
