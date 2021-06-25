@@ -369,7 +369,13 @@ const printMessage = async function (message) {
                 const streamingValue = parseInt(res.rows[j].bytes) ? (parseInt(val.values[0]) >> res.rows[j].offset) & res.rows[j].bytes : val.values[res.rows[j].offset]
 
                 if (streamingValue) { // eslint-disable-next-line
-                  await db.query('INSERT INTO active_alarms(device_id, tag_id, "offset", timestamp, machine_id, serial_number, bytes) VALUES($1, $2, $3, $4, $5, $6, $7) RETURNING *', [deviceId, res.rows[j].tag_id, res.rows[j].offset, date.getTime(), res.rows[j].machine_id, deviceSerialNumber, res.rows[j].bytes])
+                  const active_alarm = await db.query('SELECT * FROM active_alarms WHERE device_id = $1 AND tag_id = $2 AND "offset" = $3 AND machine_id = $4 AND bytes = $5 LIMIT 1', [deviceId, val.id, res.rows[j].offset, machineId, res.rows[j].bytes])
+
+                  if (active_alarm.rows.length) { // eslint-disable-next-line
+                    await db.query('UPDATE active_alarms SET timestamp = $1 WHERE device_id = $2 AND tag_id = $3 AND "offset" = $4 AND machine_id = $5 AND bytes = $6', [group.timestamp, deviceId, val.id, res.rows[j].offset, machineId, res.rows[j].bytes])
+                  } else {  // eslint-disable-next-line
+                    await db.query('INSERT INTO active_alarms(device_id, tag_id, "offset", timestamp, machine_id, serial_number, bytes) VALUES($1, $2, $3, $4, $5, $6, $7) RETURNING *', [deviceId, res.rows[j].tag_id, res.rows[j].offset, group.timestamp, res.rows[j].machine_id, deviceSerialNumber, res.rows[j].bytes])
+                  }
                   console.log('Active alarms table has been updated.')
                 } else { // eslint-disable-next-line
                   await db.query('DELETE FROM active_alarms WHERE machine_id = $2 AND tag_id = $3 AND "offset" = $4 AND device_id = $5 AND serial_number = $6', [res.rows[j].machine_id, res.rows[j].tag_id, res.rows[j].offset, deviceId, deviceSerialNumber])
@@ -432,118 +438,149 @@ const printMessage = async function (message) {
         })
 
         try { // eslint-disable-next-line
-          const conditions = await db.query('SELECT * FROM thresholds WHERE serial_number = $1 AND tag_id = $2 AND message_status = $3', [deviceId, val.id, false])
+          const conditions = await db.query('SELECT * FROM thresholds WHERE serial_number = $1 AND tag_id = $2', [deviceId, val.id])
           let value = 0
 
           // check for the default threshold conditions
           // eslint-disable-next-line no-await-in-loop
           await Promise.all(conditions.rows.map(async (condition) => {
-            const isRunning = await db.query('SELECT * FROM runnings WHERE device_id = $1 ORDER BY timestamp DESC LIMIT 1', [deviceId])
-            
             if (condition.bytes) {
               value = (val.values[0] >> condition.offset) & condition.bytes
             } else {
               value = val.values[condition.offset] / condition.multipled_by
             }
 
-            if (compareThreshold(value, condition.operator, condition.value)) {
-              console.log('Threshold option matched ')
-              const estTime = new Date(date - 60 * 60 * 4 * 1000)
+            if (condition.value) {
+              if (compareThreshold(value, condition.operator, condition.value)) {
+                console.log('Threshold option matched.')
+                const estTime = new Date(date - 60 * 60 * 4 * 1000)
 
-              try {
-                await db.query('UPDATE thresholds SET message_status = $1, last_triggered_at = $2 WHERE id = $3', [true, estTime.toISOString(), parseInt(condition.id)])
+                try {
+                  await db.query('UPDATE thresholds SET message_status = $1, last_triggered_at = $2, threshold_activated = $3 WHERE id = $4', [true, estTime.toISOString(), true, parseInt(condition.id)])
 
-                const user = await db.query('SELECT * FROM users WHERE id = $1 LIMIT 1', [condition.user_id])
-                const deviceName = await db.query('SELECT * FROM devices WHERE device_id = $1 LIMIT 1', [condition.device_id])
-                let thresholdTagName = await db.query('SELECT * FROM alarm_types WHERE tag_id = $1 AND "offset" = $2 LIMIT 1', [condition.tag_id, condition.offset])
+                  if (!condition.message_status) {
+                    const user = await db.query('SELECT * FROM users WHERE id = $1 LIMIT 1', [condition.user_id])
+                    const deviceName = await db.query('SELECT * FROM devices WHERE device_id = $1 LIMIT 1', [condition.device_id])
+                    const thresholdTagName = await db.query('SELECT * FROM machine_tags WHERE tag_id = $1 AND "offset" = $2 LIMIT 1', [condition.tag_id, condition.offset])
 
-                if (thresholdTagName.rows.length === 0) {
-                  thresholdTagName = await db.query('SELECT * FROM machine_tags WHERE tag_id = $1 AND "offset" = $2 LIMIT 1', [condition.tag_id, condition.offset])
-                }
+                    if (thresholdTagName.rows.length && user.rows.length) {
+                      const emailContent = `Hello ${user.rows[0].name}, a threshold alert has been triggered. ${deviceName.rows.length !== 0 ? deviceName.rows[0].name : '#'} has an alert of "${thresholdTagName.rows[0].name} ${condition.operator.toLowerCase()} ${condition.value}".`
 
-                if (user.rows.length !== 0) {
-                  const emailContent = `Hello ${user.rows[0].name}, a threshold alert has been triggered. ${deviceName.rows.length !== 0 ? deviceName.rows[0].name : '#'} has an alert of "${thresholdTagName.rows[0].name} ${condition.operator.toLowerCase()} ${condition.value}".`
+                      if (condition.email_checked)
+                        sendThresholdNotifyEmail(user.rows[0].email, sendGridFromEmail, 'Threshold alert has been triggered', emailContent, `<strong>${emailContent}</strong>`)
+                      if (condition.sms_checked) {
+                        const userProfile = await db.query('SELECT * FROM profiles WHERE user_id = $1 LIMIT 1', [condition.user_id])
 
-                  if (condition.email_checked)
-                    sendThresholdNotifyEmail(user.rows[0].email, sendGridFromEmail, 'Threshold alert has been triggered', emailContent, `<strong>${emailContent}</strong>`)
-                  if (condition.sms_checked) {
-                    const userProfile = await db.query('SELECT * FROM profiles WHERE user_id = $1 LIMIT 1', [condition.user_id])
-
-                    if (userProfile.rows.length && userProfile.rows[0].phone) {
-                      sendThresholdNotifySMS(parseToInternationalPhoneNumber(userProfile.rows[0].phone), twilioFromNumber, emailContent)
+                        if (userProfile.rows.length && userProfile.rows[0].phone) {
+                          sendThresholdNotifySMS(parseToInternationalPhoneNumber(userProfile.rows[0].phone), twilioFromNumber, emailContent)
+                        } else {
+                          console.log('User profile does not exist or has no phone number.')
+                        }
+                      }
                     } else {
-                      console.log('User profile does not exist or has no phone number.')
+                      console.log('Incorrect option or User does not exist for the threshold.')
                     }
                   }
-                } else {
-                  console.log('User does not exist for the threshold.')
+                  console.log('Threshold updated')
+                } catch (error) {
+                  console.log('Error occurred while updating thresholds table', error)
                 }
-
-                console.log('Threshold updated')
-              } catch (error) {
-                console.log(error)
+              } else {
+                try {
+                  await db.query('UPDATE thresholds SET threshold_activated = $1 WHERE id = $2', [false, parseInt(condition.id)])
+                } catch (error) {
+                  console.log('Error occurred while updating thresholds table', error)
+                }
               }
             }
-          }))
 
-          // check for the approaching conditions
-          // eslint-disable-next-line
-          const approaching_conditions = await db.query('SELECT * FROM thresholds WHERE serial_number = $1 AND tag_id = $2 AND approaching_status = $3', [deviceId, val.id, false])
+            if (condition.approaching) {
+              if (compareThreshold(value, condition.operator, condition.approaching)) {
+                console.log('Threshold approaching option matched.')
 
-          // eslint-disable-next-line no-await-in-loop
-          await Promise.all(approaching_conditions.rows.map(async (condition) => {
-            const isRunning = await db.query('SELECT * FROM runnings WHERE device_id = $1 ORDER BY timestamp DESC LIMIT 1', [deviceId])
-            let machineStatus = true
+                const estTime = new Date(date - 60 * 60 * 4 * 1000)
 
-            if (isRunning.rows.length === 0) {
-              machineStatus = false
-            } else {
-              machineStatus = !!isRunning.rows[0].values[0]
-            }
+                try {
+                  await db.query('UPDATE thresholds SET approaching_status = $1, approaching_triggered_time = $2, approaching_activated = $3 WHERE id = $4', [true, estTime.toISOString(), true, parseInt(condition.id)])
 
-            if (condition.bytes) {
-              value = (val.values[0] >> condition.offset) & condition.bytes
-            } else {
-              value = val.values[condition.offset] / condition.multipled_by
-            }
+                  if (!condition.approaching_status) {
+                    const user = await db.query('SELECT * FROM users WHERE id = $1 LIMIT 1', [condition.user_id])
+                    const deviceName = await db.query('SELECT * FROM devices WHERE device_id = $1 LIMIT 1', [condition.device_id])
+                    const thresholdTagName = await db.query('SELECT * FROM machine_tags WHERE tag_id = $1 AND "offset" = $2 LIMIT 1', [condition.tag_id, condition.offset])
 
-            if (compareThreshold(value, condition.operator, condition.approaching) && condition.is_running === machineStatus) {
-              console.log('Threshold approaching option matched ')
+                    if (thresholdTagName.rows.length && user.rows.length) {
+                      const emailContent = `Hello ${user.rows[0].name}, a threshold alert has been triggered. ${deviceName.rows.length !== 0 ? deviceName.rows[0].name : '#'} has an alert of "${thresholdTagName.rows[0].name} ${condition.operator.toLowerCase()} ${condition.approaching}".`
 
-              const estTime = new Date(date - 60 * 60 * 4 * 1000)
+                      if (condition.email_checked)
+                        sendThresholdNotifyEmail(user.rows[0].email, sendGridFromEmail, 'Threshold alert has been triggered', emailContent, `<strong>${emailContent}</strong>`)
+                      if (condition.sms_checked) {
+                        const userProfile = await db.query('SELECT * FROM profiles WHERE user_id = $1 LIMIT 1', [condition.user_id])
 
-              try {
-                await db.query('UPDATE thresholds SET approaching_status = $1, approaching_triggered_time = $2 WHERE id = $3', [true, estTime.toISOString(), parseInt(condition.id)])
-                
-                const user = await db.query('SELECT * FROM users WHERE id = $1 LIMIT 1', [condition.user_id])
-                const deviceName = await db.query('SELECT * FROM devices WHERE device_id = $1 LIMIT 1', [condition.device_id])
-                let thresholdTagName = await db.query('SELECT * FROM alarm_types WHERE tag_id = $1 AND "offset" = $2 LIMIT 1', [condition.tag_id, condition.offset])
-
-                if (thresholdTagName.rows.length === 0) {
-                  thresholdTagName = await db.query('SELECT * FROM machine_tags WHERE tag_id = $1 AND "offset" = $2 LIMIT 1', [condition.tag_id, condition.offset])
-                }
-
-                if (user.rows.length !== 0) {
-                  const emailContent = `Hello ${user.rows[0].name}, a threshold alert has been triggered. ${deviceName.rows.length !== 0 ? deviceName.rows[0].name : '#'} has an alert of "${thresholdTagName.rows[0].name} ${condition.operator.toLowerCase()} ${condition.value}".`
-
-                  if (condition.email_checked)
-                    sendThresholdNotifyEmail(user.rows[0].email, sendGridFromEmail, 'Threshold alert has been triggered', emailContent, `<strong>${emailContent}</strong>`)
-                  if (condition.sms_checked) {
-                    const userProfile = await db.query('SELECT * FROM profiles WHERE user_id = $1 LIMIT 1', [condition.user_id])
-
-                    if (userProfile.rows.length && userProfile.rows[0].phone) {
-                      sendThresholdNotifySMS(parseToInternationalPhoneNumber(userProfile.rows[0].phone), twilioFromNumber, emailContent)
+                        if (userProfile.rows.length && userProfile.rows[0].phone) {
+                          sendThresholdNotifySMS(parseToInternationalPhoneNumber(userProfile.rows[0].phone), twilioFromNumber, emailContent)
+                        } else {
+                          console.log('User profile does not exist or has no phone number.')
+                        }
+                      }
                     } else {
-                      console.log('User profile does not exist or has no phone number.')
+                      console.log('Incorrect option or User does not exist for the threshold.')
                     }
                   }
-                } else {
-                  console.log('User does not exist for the threshold.')
+                  console.log('Threshold approaching status has been updated.')
+                } catch (error) {
+                  console.log('Error occured while updating thresholds table', error)
                 }
+              } else {
+                try {
+                  await db.query('UPDATE thresholds SET approaching_activated = $1 WHERE id = $2', [false, parseInt(condition.id)])
+                } catch (error) {
+                  console.log('Error occurred while updating thresholds table ', error)
+                }
+              }
+            }
 
-                console.log('Threshold updated')
-              } catch (error) {
-                console.log(error)
+            if (condition.is_running) {
+              if (compareThreshold(!!value, condition.operator, condition.is_running)) {
+                console.log('Threshold alarm option matched.')
+
+                const estTime = new Date(date - 60 * 60 * 4 * 1000)
+
+                try {
+                  await db.query('UPDATE thresholds SET message_status = $1, last_triggered_at = $2, threshold_activated = $3 WHERE id = $4', [true, estTime.toISOString(), true, parseInt(condition.id)])
+
+                  if (!condition.message_status) {
+                    const user = await db.query('SELECT * FROM users WHERE id = $1 LIMIT 1', [condition.user_id])
+                    const deviceName = await db.query('SELECT * FROM devices WHERE device_id = $1 LIMIT 1', [condition.device_id])
+                    const thresholdTagName = await db.query('SELECT * FROM alarm_types WHERE tag_id = $1 AND "offset" = $2 LIMIT 1', [condition.tag_id, condition.offset])
+
+                    if (thresholdTagName.rows.length && user.rows.length) {
+                      const emailContent = `Hello ${user.rows[0].name}, a threshold alert has been triggered. ${deviceName.rows.length !== 0 ? deviceName.rows[0].name : '#'} has an alert of "${thresholdTagName.rows[0].name} ${condition.operator.toLowerCase()} ${condition.is_running}".`
+
+                      if (condition.email_checked)
+                        sendThresholdNotifyEmail(user.rows[0].email, sendGridFromEmail, 'Threshold alert has been triggered', emailContent, `<strong>${emailContent}</strong>`)
+                      if (condition.sms_checked) {
+                        const userProfile = await db.query('SELECT * FROM profiles WHERE user_id = $1 LIMIT 1', [condition.user_id])
+
+                        if (userProfile.rows.length && userProfile.rows[0].phone) {
+                          sendThresholdNotifySMS(parseToInternationalPhoneNumber(userProfile.rows[0].phone), twilioFromNumber, emailContent)
+                        } else {
+                          console.log('User profile does not exist or has no phone number.')
+                        }
+                      }
+                    } else {
+                      console.log('Incorrect option or User does not exist for the threshold.')
+                    }
+                  }
+                  console.log('Threshold updated')
+                } catch (error) {
+                  console.log(error)
+                }
+              } else {
+                try {
+                  await db.query('UPDATE thresholds SET approaching_activated = $1 WHERE id = $2', [false, parseInt(condition.id)])
+                } catch (error) {
+                  console.log('Error occurred while updating thresholds table ', error)
+                }
               }
             }
           }))
